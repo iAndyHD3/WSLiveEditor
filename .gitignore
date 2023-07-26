@@ -1,0 +1,7 @@
+# Xmake cache
+.xmake/
+build/
+
+#config file
+custom.txt
+custom_cfg.txt

@@ -165,6 +165,11 @@ namespace gd {
                 base + 0x160980
             )(this, obj, undo);
 		}
+        void createObjectsFromSetup(const std::string& obj) {
+            reinterpret_cast<void(__thiscall*)(LevelEditorLayer*, std::string)>(
+                base + 0x160720
+            )(this, obj);
+        }
     };
 
 }

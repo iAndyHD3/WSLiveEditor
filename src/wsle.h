@@ -35,4 +35,7 @@ namespace wsle
 		
 		std::pair<bool, std::string> handle(gd::LevelEditorLayer*);
 	};
+	
+	void queueAction(const std::function<void()>& func);
+	std::vector<std::string> splitByDelim(const std::string& str, char delim);
 }

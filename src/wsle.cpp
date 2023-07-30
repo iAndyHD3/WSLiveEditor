@@ -5,34 +5,18 @@
 #include <utility>
 #include <gd.h>
 #include <algorithm>
+#include <iostream>
 #include <fmt/format.h>
+#include <chrono>
+#include "MinHook.h"
+
+
 
 namespace wsle 
 {
 	void handle(const json::jobject& j, ix::WebSocket* socket)
 	{
-		try
-		{
-			//first is the "order" key, second is the index the array is in.
-			std::set<std::pair<int, int>> actionList;
-			
-			int size = j.size();
-			for(int i = 0; i < size; i++)
-			{
-				int order = j.array(i).get("order");
-				actionList.emplace(order, i);
-			}
-			
-			for(const auto& action : actionList)
-			{
-				printf("calling action | order: %d, index: %d\n", action.first, action.second);
-				sendResult(handleAction(j.array(action.second)), socket);
-			}
-		}
-		catch(std::exception& e)
-		{
-			return sendResult(std::make_pair(false, e.what()), socket);
-		}
+		sendResult(handleAction(j), socket);
 	}
 	
 	std::pair<bool, std::string> handleAction(const json::jobject& action)
@@ -76,6 +60,7 @@ namespace wsle
 
 	void sendResult(const std::pair<bool, std::string>& result, ix::WebSocket* socket)
 	{
+		
 		if(!socket) return;
 		
 		if(result.first)
@@ -91,6 +76,7 @@ namespace wsle
 		{
 			socket->send("{\"ok\":false}");
 		}
+		
 	}
 	
 	std::vector<std::string> splitByDelim(const std::string& str, char delim)
@@ -114,51 +100,52 @@ namespace wsle
 	
 		return tokens;
 	}
-
+	
+	
 	std::pair<bool, std::string> add_objects_string::handle(gd::LevelEditorLayer* editor)
 	{
-		if(this->value.empty()) return {false, "empty value key"};
 		
-		auto objects = splitByDelim(this->value, ';');
-		for(const auto& str : objects)
+		if(this->value.empty()) return {false, "empty value key"};		
+		queueAction([editor, objstr = this->value]
 		{
-			if(str.empty()) continue;
-			editor->addObjectFromString(str);
-		}
-		
+			std::vector<std::string> objs = wsle::splitByDelim(objstr, ';');
+			for(const auto& s : objs)
+			{
+				editor->addObjectFromString(s);
+			}
+		});
 		return {true, {}};
 	}
 	
 	std::pair<bool, std::string> remove_objects::handle(gd::LevelEditorLayer* editor)
 	{
-		cocos2d::CCArray* all = editor->getAllObjects();
-		int count = all->count();
-		short removeGroup = static_cast<short>(std::stoi(this->value));
-		cocos2d::CCArray* toDelete = cocos2d::CCArray::create();
-		
-		for(int i = 0; i < count; i++)
+		queueAction([editor, groupstr = this->value]
 		{
-			auto obj = reinterpret_cast<gd::GameObject*>(all->objectAtIndex(i));
-			std::vector<short> groups = obj->getGroupIDs();
-			if(std::find(groups.begin(), groups.end(), removeGroup) != groups.end())
+			cocos2d::CCArray* all = editor->getAllObjects();
+			int count = all->count();
+			short removeGroup = static_cast<short>(std::stoi(groupstr));
+			cocos2d::CCArray* toDelete = cocos2d::CCArray::create();
+			
+			for(int i = 0; i < count; i++)
 			{
-				toDelete->addObject(obj);
+				auto obj = reinterpret_cast<gd::GameObject*>(all->objectAtIndex(i));
+				std::vector<short> groups = obj->getGroupIDs();
+				if(std::find(groups.begin(), groups.end(), removeGroup) != groups.end())
+				{
+					toDelete->addObject(obj);
+				}
 			}
-		}
-		
-		if(toDelete->count() > 0)
-		{
-			auto ui = editor->m_pEditorUI;
-			ui->deselectAll();
-			ui->selectObjects(toDelete, false);
-			ui->onDeleteSelected(nullptr);
-			return {true, {}};
-		}
-		
-		return {false, "no objects to delete"};
+			int deleteCount = toDelete->count();
+			for(int i = 0; i < deleteCount; i++)
+			{
+				auto obj = reinterpret_cast<gd::GameObject*>(toDelete->objectAtIndex(i));
+				editor->m_pEditorUI->deleteObject(obj, false);
+			}
+		});
+
+		return {true, {}};
+		//return {false, "no objects to delete"};
 	}
-
-
 }
 
 

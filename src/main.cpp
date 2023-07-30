@@ -21,6 +21,13 @@
 using namespace gd;
 using namespace cocos2d;
 
+#include <functional>
+#include <vector>
+
+
+std::vector<std::function<void()>> workFuncs;
+std::mutex workMutex;
+
 
 std::string decompressStr(std::string compressedLvlStr)
 {
@@ -48,7 +55,7 @@ void runServer()
 	ix::initNetSystem();
 	// Run a server on localhost at a given port.
 	// Bound host name, max connections and listen backlog can also be passed in as parameters.
-	int port = 8080;
+	int port = 1313;
 	std::string host("127.0.0.1"); // If you need this server to be accessible on a different machine, use "0.0.0.0"
 	ix::WebSocketServer server(port, host);
 
@@ -80,6 +87,9 @@ void runServer()
 				std::cout << "exception: " << e.what() << '\n';
 				wsle::sendResult({false, e.what()}, &webSocket);
 			}
+		}
+		else if(msg->type == ix::WebSocketMessageType::Close)
+		{
 		}
 	});
 
@@ -123,28 +133,63 @@ public:
 };
 
 
+void (__thiscall* LevelEditorLayer_updateO)(void*, float);
+void __fastcall LevelEditorLayer_updateH(LevelEditorLayer* self, void* edx, float dt)
+{
+	workMutex.lock();
+	if(!workFuncs.empty())
+	{
+		for(const auto& f : workFuncs)
+		{
+			puts("calling action function");
+			f();
+		}
+		workFuncs.clear();
+	}
+	workMutex.unlock();
+	
+	LevelEditorLayer_updateO(self, dt);
+	
+}
 
-void dese(void* self, void* sender)
+
+void dese(EditorUI* ui, void* sender)
 {
 	puts("helloi world");
-	std::ifstream t("C:\\Users\\marca\\Desktop\\projects\\WSLiveEditor\\test.json");
+	std::ifstream t("C:\\Users\\marca\\Desktop\\projects\\WSLiveEditor\\message.txt");
 	std::string str((std::istreambuf_iterator<char>(t)), std::istreambuf_iterator<char>());
+	std::vector<std::string> objs = wsle::splitByDelim(str, ';');
 	
-
+	auto editor = gd::LevelEditorLayer::get();
+	int i = 0;
+	for(const auto& s : objs)
+	{
+		editor->addObjectFromString(s);
+	}
+/*
 	printf("str: %s\n", str.c_str());
 
 	try
 	{
-		auto jsonstr = decompressStr(str);
-		printf("jsonstr: %s\n", jsonstr.c_str());
-		json::jobject result = json::jobject::parse(jsonstr);
+		bool gzip = str.starts_with("H4sIAAAAAAAA");
+		json::jobject result = json::jobject::parse(gzip ? decompressStr(str) : str);
 		wsle::handle(result, nullptr);
 	}
 	catch(std::exception& e)
 	{
 		std::cout << "exception: " << e.what();
 	}
+	*/
+	//gd::LevelEditorLayer::get()->createObjectsFromSetup(str);
 }
+
+void wsle::queueAction(const std::function<void()>& func)
+{
+	workMutex.lock();
+	workFuncs.push_back(func);
+	workMutex.unlock();
+}
+
 
 void mod_main(HMODULE) {
 	
@@ -161,5 +206,13 @@ void mod_main(HMODULE) {
 	puts("WSLiveEditor 1.0 | Debug Console");
 	
 	matdash::add_hook<&MenuLayerMod::init_>(base + 0x1907b0);
-	//matdash::add_hook<&dese>(base + 0x191e90);
+	matdash::add_hook<&dese>(base + 0x87340);
+	
+	MH_CreateHook(
+		reinterpret_cast<void*>(gd::base + 0x1632b0),
+		reinterpret_cast<void*>(&LevelEditorLayer_updateH),
+		reinterpret_cast<void**>(&LevelEditorLayer_updateO)
+	);
+	MH_EnableHook(reinterpret_cast<void*>(gd::base + 0x1632b0));
+
 }

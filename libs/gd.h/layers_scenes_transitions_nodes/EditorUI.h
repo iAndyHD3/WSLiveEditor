@@ -866,6 +866,11 @@ class GDH_DLL EditorUI : public cocos2d::CCLayer,
                 base + 0x8f320
             )(this, objs, alignY);
         }
+        void deleteObject(GameObject* obj, bool filter) {
+            reinterpret_cast<void(__thiscall*)(EditorUI*, GameObject*, bool)>(
+                base + 0x7bed0
+            )(this, obj, filter);
+        }
     };
 
 }

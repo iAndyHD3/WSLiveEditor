@@ -18,7 +18,7 @@ add_rules("mode.releasedbg")
 
 set_allowedarchs("windows|x86") --allow only windows x86
 set_defaultarchs("windows|x86") --set default windows x86
-set_allowedmodes("release", "releasedbg") --allow only Release and RelWithDebInfo
+set_allowedmodes("release") --allow only Release and RelWithDebInfo
 set_languages("c++20") --set c++20
 
 
@@ -41,10 +41,13 @@ target("gdmod") --dll name and target name
 	set_kind("shared")
 	add_files("src/*.cpp")
 	add_packages("fmt")
-	add_deps("cocos-headers")
-	add_deps("mat-dash")
-	add_deps("gd.h")
-	set_rundir("/bin")
+	add_deps("cocos-headers", "mat-dash", "gd.h", "ixwebsocket")
+	add_syslinks("ws2_32")
+	
+	on_load(function(target)
+		target:add("defines", "TARGET_NAME=\"" .. target:basename() .. "\"")
+	end)
+	
 	
 	--add minhook manually here since it doesnt seem to work when added with target
 	add_includedirs("libs/minhook/include")

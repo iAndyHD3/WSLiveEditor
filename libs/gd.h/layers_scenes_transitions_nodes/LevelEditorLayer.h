@@ -84,13 +84,13 @@ namespace gd {
             
         }
 
-        void removeObject(GameObject * obj, bool idk) {
+        void removeObject(GameObject * obj, bool noUndo) {
             reinterpret_cast<void(__thiscall*)(
                 LevelEditorLayer *,GameObject *,bool
             )>(
                 base + 0x161cb0
             )(
-                this, obj, idk
+                this, obj, noUndo
             );
         }
 
@@ -160,6 +160,11 @@ namespace gd {
                 base + 0x162650
             )(this, obj);
         }
+		cocos2d::CCArray* createObjectsFromString(std::string obj, bool undo) {
+			return reinterpret_cast<cocos2d::CCArray*(__thiscall*)(LevelEditorLayer*, std::string, bool)>(
+                base + 0x160980
+            )(this, obj, undo);
+		}
     };
 
 }

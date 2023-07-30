@@ -1,0 +1,5 @@
+target("ixwebsocket")
+	set_kind("headeronly")
+	add_linkdirs("lib/x86", {public = true})
+	add_includedirs("include", {public = true})
+	add_links("libixwebsocket", {public = true})

@@ -54,3 +54,6 @@ json object where `ok` is a boolean and an optional `error` if there is a reason
 }
 ```
 
+## Testing
+
+The [Simple WebSocket Client](https://chrome.google.com/webstore/detail/simple-websocket-client/pfdhoblngboilpfeibdedpjgfnlcodoo) chrome extension works great

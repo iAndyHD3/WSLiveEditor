@@ -36,7 +36,7 @@ add_requires("fmt")
 
 includes("**/xmake.lua") -- recursively add files through pattern matching
 
-target("gdmod") --dll name and target name
+target("WSLiveEditor") --dll name and target name
 	set_default(true)
 	set_kind("shared")
 	add_files("src/*.cpp")

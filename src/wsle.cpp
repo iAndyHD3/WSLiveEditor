@@ -123,7 +123,6 @@ namespace wsle
 		for(const auto& str : objects)
 		{
 			if(str.empty()) continue;
-			//printf("adding object: %s", str.c_str());
 			editor->addObjectFromString(str);
 		}
 		
@@ -143,7 +142,6 @@ namespace wsle
 			std::vector<short> groups = obj->getGroupIDs();
 			if(std::find(groups.begin(), groups.end(), removeGroup) != groups.end())
 			{
-				puts("found obj");
 				toDelete->addObject(obj);
 			}
 		}

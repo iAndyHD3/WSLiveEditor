@@ -1,2 +1,13 @@
-H4sIAAAAAAAACovmUlCoBmIFBaWSyoJUJSsFpcSUlPj8pKzU5JLi+OKSosy8dCUdLk6lssScUrC8oY4REBqaGugYg0igJFh7flFKahFQ3hDIreWKBQCVjSYoWQAAAA==
-
+[
+  {
+    "type": "add_objects_string",
+    "value": "1,1,2,150,3,150;1,1,2,150,3,180",
+    "order": 1
+  },
+  {
+    "type": "remove_objects",
+    "filter": "group",
+    "value": 5,
+    "order": 0
+  }
+]

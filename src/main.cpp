@@ -64,6 +64,11 @@ void runServer()
 		}
 		else if (msg->type == ix::WebSocketMessageType::Message)
 		{
+			if(!gd::LevelEditorLayer::get())
+			{
+				return wsle::sendResult({ false, "User is not in the editor" }, &webSocket);
+			}
+			
 			try
 			{
 				bool gzip = msg->str.starts_with("H4sIAAAAAAAA");

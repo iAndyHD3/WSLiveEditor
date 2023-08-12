@@ -44,9 +44,11 @@ target("WSLiveEditor") --dll name and target name
 	add_deps("cocos-headers", "mat-dash", "gd.h", "ixwebsocket")
 	add_syslinks("ws2_32")
 	
-	on_load(function(target)
-		target:add("defines", "TARGET_NAME=\"" .. target:basename() .. "\"")
-	end)
+	add_cxflags("cl::-diagnostics:column")
+	
+	--on_load(function(target)
+	--	target:add("defines", "TARGET_NAME=\"" .. target:basename() .. "\"")
+	--end)
 	
 	
 	--add minhook manually here since it doesnt seem to work when added with target

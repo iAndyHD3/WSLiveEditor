@@ -1,3 +1,5 @@
+#include "json.hpp"
+
 #define WIN32_LEAN_AND_MEAN  
 #include <winsock2.h>
 
@@ -24,8 +26,9 @@ using namespace cocos2d;
 #include <functional>
 #include <vector>
 
+using json = nlohmann::json;
 
-std::vector<std::function<void()>> workFuncs;
+std::vector<std::function<void(gd::LevelEditorLayer*)>> workFuncs;
 std::mutex workMutex;
 
 
@@ -71,22 +74,33 @@ void runServer()
 		}
 		else if (msg->type == ix::WebSocketMessageType::Message)
 		{
+			if(msg->str == "ping") return (void)webSocket.send("pong");
+			if(msg->str == "pong") return (void)webSocket.send("ping");
+
 			if(!gd::LevelEditorLayer::get())
 			{
-				return wsle::sendResult({ false, "User is not in the editor" }, &webSocket);
+				return sendResultData(wsle::ActionResult::USER_NOT_IN_EDITOR, webSocket);
 			}
 			
 			try
 			{
 				bool gzip = msg->str.starts_with("H4sIAAAAAAAA");
-				json::jobject result = json::jobject::parse(gzip ? decompressStr(msg->str) : msg->str);
-				wsle::handle(result, &webSocket);
+				nlohmann::json result = nlohmann::json::parse(gzip ? decompressStr(msg->str) : msg->str);
+				
+				wsle::redirect_to_handler(result, webSocket);
 			}
 			catch(std::exception& e)
 			{
 				std::cout << "exception: " << e.what() << '\n';
-				wsle::sendResult({false, e.what()}, &webSocket);
+				return sendResultData(wsle::ActionResult::UNKNOWN_EXCEPTION, webSocket);
 			}
+			catch(...)
+			{
+				std::cout << "something very bad happened\n";
+				return sendResultData(wsle::ActionResult::UNKNOWN_ERROR, webSocket);
+			}
+			
+
 		}
 		else if(msg->type == ix::WebSocketMessageType::Close)
 		{
@@ -114,17 +128,11 @@ void runServer()
 	ix::uninitNetSystem();
 }
 
-class MenuLayerMod : public MenuLayer {
-public:
-	// here the name cant be `init` as that would make it a virtual
-	// which doesnt work with the current code
-	bool init_() {
+struct MenuLayerMod : public MenuLayer
+{
+	bool init_()
+	{
 		if (!matdash::orig<&MenuLayerMod::init_>(this)) return false;
-		
-		//std::string str = fmt::format("Hello from {}", "xmake");
-		//auto label = CCLabelBMFont::create(str.c_str(), "bigFont.fnt");
-		//label->setPosition(ccp(200, 200));
-		//addChild(label);
 		
 		std::thread([]{ runServer(); }).detach();
 
@@ -142,7 +150,7 @@ void __fastcall LevelEditorLayer_updateH(LevelEditorLayer* self, void* edx, floa
 		for(const auto& f : workFuncs)
 		{
 			puts("calling action function");
-			f();
+			f(self);
 		}
 		workFuncs.clear();
 	}
@@ -152,44 +160,50 @@ void __fastcall LevelEditorLayer_updateH(LevelEditorLayer* self, void* edx, floa
 	
 }
 
-
-void dese(EditorUI* ui, void* sender)
-{
-	puts("helloi world");
-	std::ifstream t("C:\\Users\\marca\\Desktop\\projects\\WSLiveEditor\\message.txt");
-	std::string str((std::istreambuf_iterator<char>(t)), std::istreambuf_iterator<char>());
-	std::vector<std::string> objs = wsle::splitByDelim(str, ';');
-	
-	auto editor = gd::LevelEditorLayer::get();
-	int i = 0;
-	for(const auto& s : objs)
-	{
-		editor->addObjectFromString(s);
-	}
-/*
-	printf("str: %s\n", str.c_str());
-
-	try
-	{
-		bool gzip = str.starts_with("H4sIAAAAAAAA");
-		json::jobject result = json::jobject::parse(gzip ? decompressStr(str) : str);
-		wsle::handle(result, nullptr);
-	}
-	catch(std::exception& e)
-	{
-		std::cout << "exception: " << e.what();
-	}
-	*/
-	//gd::LevelEditorLayer::get()->createObjectsFromSetup(str);
-}
-
-void wsle::queueAction(const std::function<void()>& func)
+void wsle::queueAction(const std::function<void(gd::LevelEditorLayer*)>& func)
 {
 	workMutex.lock();
-	workFuncs.push_back(func);
+	workFuncs.emplace_back(func);
 	workMutex.unlock();
 }
 
+void wsle::splitCallback(const std::string& str, char delim, std::function<void(const std::string& s)> callback) {
+    size_t pos = 0;
+    size_t len = str.length();
+
+    while (pos < len) {
+        size_t end = str.find_first_of(delim, pos);
+        if (end == std::string::npos) {
+            callback(str.substr(pos));
+            break;
+        }
+        callback(str.substr(pos, end - pos));
+        pos = end + 1;
+    }
+}
+
+std::vector<std::string> wsle::splitByDelim(const std::string& str, char delim)
+{
+	std::vector<std::string> tokens;
+	size_t pos = 0;
+	size_t len = str.length();
+	tokens.reserve(len / 2); // allocate memory for expected number of tokens
+
+	while (pos < len)
+	{
+		size_t end = str.find_first_of(delim, pos);
+		if (end == std::string::npos)
+		{
+			tokens.emplace_back(str.substr(pos));
+			break;
+		}
+		tokens.emplace_back(str.substr(pos, end - pos));
+		pos = end + 1;
+	}
+
+	return tokens;
+}
+	
 
 void mod_main(HMODULE) {
 	
@@ -206,7 +220,7 @@ void mod_main(HMODULE) {
 	puts("WSLiveEditor 1.0 | Debug Console");
 	
 	matdash::add_hook<&MenuLayerMod::init_>(base + 0x1907b0);
-	matdash::add_hook<&dese>(base + 0x87340);
+	//matdash::add_hook<&dese>(base + 0x87340);
 	
 	MH_CreateHook(
 		reinterpret_cast<void*>(gd::base + 0x1632b0),

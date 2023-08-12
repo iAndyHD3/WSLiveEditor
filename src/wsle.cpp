@@ -1,136 +1,95 @@
+#include "json.hpp"
 
-#include "json.h"
 #include "wsle.h"
-#include <set>
 #include <utility>
 #include <gd.h>
-#include <algorithm>
 #include <iostream>
 #include <fmt/format.h>
 #include <chrono>
 #include "MinHook.h"
+#include "magic_enum.hpp"
+#include <charconv>
 
-
+using json = nlohmann::json;
 
 namespace wsle 
 {
-	void handle(const json::jobject& j, ix::WebSocket* socket)
+	//all valid json messages go here
+	void redirect_to_handler(const nlohmann::json& j, ix::WebSocket& socket)
 	{
-		sendResult(handleAction(j), socket);
-	}
-	
-	std::pair<bool, std::string> handleAction(const json::jobject& action)
-	{
+		bool in_editor = gd::LevelEditorLayer::get() != nullptr;
+		if(!in_editor) return sendResultData(ActionResult::USER_NOT_IN_EDITOR, socket);
+		
 		try
 		{
-			auto editor = gd::LevelEditorLayer::get();
-			
-			if(!editor) 				return { false, "User is not in the editor" };
-			if(!action.has_key("type")) return { false, "type key is missing" };
-			
-			std::string type = action["type"];
-			
-			//helper
-			
-			if(type == "add_objects_string")
+			if(!j.contains("value") || !j.contains("type"))
 			{
-				if(!action.has_key("value")) return { false, "value key is missing" };
-				
-				add_objects_string aos;
-				aos.value = action["value"].as_string();
-				return aos.handle(editor);
-			}
-			if(type == "remove_objects")
-			{
-				if(!action.has_key("value")) 	return { false, "value key is missing" };
-				if(!action.has_key("filter")) 	return { false, "filter key is missing" };
-				
-				remove_objects ro;
-				ro.value = action["value"].as_string();
-				ro.filter = action["filter"].as_string();
-				return ro.handle(editor);
+				return sendResultData(ActionResult::INVALID_JSON, socket);
 			}
 		}
 		catch(std::exception& e)
 		{
-			return std::make_pair(false, e.what());
+			return sendResultData(ActionResult::INVALID_JSON, socket);
 		}
+		
+		auto toUpper_branchless = [](char* d, int count)
+		{
+			for (int i = 0; i < count; i++)
+				d[i] -= 32 * (d[i] >= 'a' && d[i] <= 'z');
+		};
+		
+		std::string strtype = j["type"].get<std::string>();
+		toUpper_branchless((char*)strtype.c_str(), strtype.size());
+		std::cout << strtype << '\n';
+		
+		std::optional<ActionType> type = magic_enum::enum_cast<ActionType>(strtype);
+		if(type.has_value())
+		{
+			switch(*type)
+			{
+				case ActionType::ADD_OBJECTS_STRING:   return ADD_OBJECTS_STRING::handle(j, socket);
+				case ActionType::REMOVE_OBJECTS_GROUP: return REMOVE_OBJECTS_GROUP::handle(j, socket);
+			}
+		}
+		
+		sendResultData(ActionResult::INVALID_TYPE, socket);
 	}
 
-
-	void sendResult(const std::pair<bool, std::string>& result, ix::WebSocket* socket)
+	void ADD_OBJECTS_STRING::handle(const nlohmann::json& j, ix::WebSocket& socket)
 	{
-		
-		if(!socket) return;
-		
-		if(result.first)
+		queueAction([j, &socket](gd::LevelEditorLayer* self)
 		{
-			socket->send("{\"ok\":true}");
-		}
-		else if(!result.second.empty())
-		{
-			std::string msg = fmt::format("{{\"ok\":false,\"error\":\"{}\"}}", result.second);
-			socket->send(msg);
-		}
-		else
-		{
-			socket->send("{\"ok\":false}");
-		}
-		
-	}
-	
-	std::vector<std::string> splitByDelim(const std::string& str, char delim)
-	{
-		std::vector<std::string> tokens;
-		size_t pos = 0;
-		size_t len = str.length();
-		tokens.reserve(len / 2); // allocate memory for expected number of tokens
-	
-		while (pos < len)
-		{
-			size_t end = str.find_first_of(delim, pos);
-			if (end == std::string::npos)
-			{
-				tokens.emplace_back(str.substr(pos));
-				break;
-			}
-			tokens.emplace_back(str.substr(pos, end - pos));
-			pos = end + 1;
-		}
-	
-		return tokens;
-	}
-	
-	
-	std::pair<bool, std::string> add_objects_string::handle(gd::LevelEditorLayer* editor)
-	{
-		
-		if(this->value.empty()) return {false, "empty value key"};		
-		queueAction([editor, objstr = this->value]
-		{
-			std::vector<std::string> objs = wsle::splitByDelim(objstr, ';');
-			for(const auto& s : objs)
-			{
-				editor->addObjectFromString(s);
-			}
+			splitCallback(j["value"].get<std::string>(), ';', [self](const std::string &s) { self->addObjectFromString(s); });
+			sendResultData(ActionResult::OK, socket);
 		});
-		return {true, {}};
 	}
 	
-	std::pair<bool, std::string> remove_objects::handle(gd::LevelEditorLayer* editor)
+	auto containsAny(const auto& v1, const auto& v2)
 	{
-		queueAction([editor, groupstr = this->value]
+		for (const auto& i1 : v1)
+			for (const auto& i2 : v2)
+				if (i1 == i2) return true;
+		return false;
+	}
+
+	void REMOVE_OBJECTS_GROUP::handle(const nlohmann::json& j, ix::WebSocket& socket)
+	{
+		queueAction([j,&socket](gd::LevelEditorLayer* self)
 		{
-			cocos2d::CCArray* all = editor->getAllObjects();
-			int count = all->count();
-			short removeGroup = static_cast<short>(std::stoi(groupstr));
+			auto removeGroups = REMOVE_OBJECTS_GROUP::getGroupsFromJson(j["value"]);
+			if(removeGroups.empty()) return sendResultData(ActionResult::INVALID_JSON, socket);
+			
+			cocos2d::CCArray* all = self->getAllObjects();
+			int objectCount = all->count();
+			if(objectCount <= 0) return sendResultData(ActionResult::EMPTY_LEVEL, socket);
+			
 			cocos2d::CCArray* toDelete = cocos2d::CCArray::create();
 			
-			for(int i = 0; i < count; i++)
+			for(int i = 0; i < objectCount; i++)
 			{
 				auto obj = reinterpret_cast<gd::GameObject*>(all->objectAtIndex(i));
 				std::vector<short> groups = obj->getGroupIDs();
-				if(std::find(groups.begin(), groups.end(), removeGroup) != groups.end())
+				if(containsAny(groups, removeGroups))
 				{
 					toDelete->addObject(obj);
 				}
@@ -139,12 +98,51 @@ namespace wsle
 			for(int i = 0; i < deleteCount; i++)
 			{
 				auto obj = reinterpret_cast<gd::GameObject*>(toDelete->objectAtIndex(i));
-				editor->m_pEditorUI->deleteObject(obj, false);
+				self->m_pEditorUI->deleteObject(obj, false);
 			}
+			sendResultData(ActionResult::OK, socket);
 		});
 
-		return {true, {}};
-		//return {false, "no objects to delete"};
+	}
+	
+
+	std::set<short> REMOVE_OBJECTS_GROUP::getGroupsFromJson(const json& j)
+	{
+		//return single group
+		if (j.is_number_unsigned())
+		{
+			return { j.template get<short>() };
+		}
+
+		if (j.is_array())
+		{
+			std::set<short> groups;
+			for (const auto& element : j)
+			{
+				if(element.is_number_unsigned())
+					groups.insert(element.get<short>());
+			}
+			return groups;
+		}
+		return {};
+	}
+	
+	void sendResultData(ActionResult result, ix::WebSocket& socket, std::source_location location)
+	{
+		using enum wsle::ActionResult;
+		
+		switch(result)
+		{
+			case OK: socket.send("{\"ok\":true}"); break;
+			default: 
+			{
+				nlohmann::json j;
+				j["ok"] = false;
+				j["error"] = static_cast<std::string>(magic_enum::enum_name(result));
+				socket.send(j.dump());
+			}
+		}
+		fmt::println("Sending result: {} | {}({})", magic_enum::enum_name(result), location.file_name(), location.line());
 	}
 }
 

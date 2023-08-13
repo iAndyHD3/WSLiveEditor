@@ -11,7 +11,6 @@
 #include <gd.h>
 #include <support/zip_support/ZipUtils.h>
 
-#define USE_WIN32_CONSOLE
 #include <ixwebsocket/IXWebSocketServer.h>
 #include "wsle.h"
 
@@ -30,6 +29,8 @@ using json = nlohmann::json;
 
 std::vector<std::function<void(gd::LevelEditorLayer*)>> workFuncs;
 std::mutex workMutex;
+ix::WebSocketServer* serverPtr = nullptr;
+
 
 
 std::string decompressStr(std::string compressedLvlStr)
@@ -61,6 +62,7 @@ void runServer()
 	int port = 1313;
 	std::string host("127.0.0.1"); // If you need this server to be accessible on a different machine, use "0.0.0.0"
 	ix::WebSocketServer server(port, host);
+	serverPtr = &server;
 
 	server.setOnClientMessageCallback([&server](std::shared_ptr<ix::ConnectionState> connectionState, ix::WebSocket& webSocket, const ix::WebSocketMessagePtr& msg)
 	{
@@ -126,6 +128,8 @@ void runServer()
 	server.wait();
 
 	ix::uninitNetSystem();
+	serverPtr = nullptr;
+	fmt::println("Server stopped correctly");
 }
 
 struct MenuLayerMod : public MenuLayer
@@ -139,7 +143,6 @@ struct MenuLayerMod : public MenuLayer
 		return true;
 	}
 };
-
 
 void (__thiscall* LevelEditorLayer_updateO)(void*, float);
 void __fastcall LevelEditorLayer_updateH(LevelEditorLayer* self, void* edx, float dt)
@@ -204,23 +207,40 @@ std::vector<std::string> wsle::splitByDelim(const std::string& str, char delim)
 	return tokens;
 }
 	
+void startServer()
+{
+	if(!serverPtr) std::thread([]{runServer();}).detach();
+}
+
+void stopServer()
+{
+	if(serverPtr) serverPtr->stop();
+}
+
+void LevelEditorLayer_init(void* self, void* level)
+{
+	startServer();
+	matdash::orig<&LevelEditorLayer_init>(self, level);
+}
+
+void LevelEditorLayer_dtor(void* self)
+{
+	stopServer();
+	matdash::orig<&LevelEditorLayer_dtor>(self);
+}
+
 
 void mod_main(HMODULE) {
-	
 
-	#ifdef USE_WIN32_CONSOLE
-		if(AllocConsole()) {
-			freopen("CONOUT$", "wt", stdout);
-			freopen("CONIN$", "rt", stdin);
-			freopen("CONOUT$", "w", stderr);
-			std::ios::sync_with_stdio(1);
-		}
-	#endif
-	
-	puts("WSLiveEditor 1.0 | Debug Console");
-	
-	matdash::add_hook<&MenuLayerMod::init_>(base + 0x1907b0);
-	//matdash::add_hook<&dese>(base + 0x87340);
+	// if(AllocConsole()) {
+	// 	freopen("CONOUT$", "wt", stdout);
+	// 	freopen("CONIN$", "rt", stdin);
+	// 	freopen("CONOUT$", "w", stderr);
+	// 	std::ios::sync_with_stdio(1);
+	// }
+
+	matdash::add_hook<&LevelEditorLayer_dtor>(base + 0x15e8d0);
+	matdash::add_hook<&LevelEditorLayer_init>(base + 0x15EE00);
 	
 	MH_CreateHook(
 		reinterpret_cast<void*>(gd::base + 0x1632b0),

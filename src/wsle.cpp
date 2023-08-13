@@ -39,7 +39,7 @@ namespace wsle
 		};
 		
 		std::string strtype = j["type"].get<std::string>();
-		toUpper_branchless((char*)strtype.c_str(), strtype.size());
+		toUpper_branchless(strtype.data(), strtype.size());
 		std::cout << strtype << '\n';
 		
 		std::optional<ActionType> type = magic_enum::enum_cast<ActionType>(strtype);
@@ -49,9 +49,10 @@ namespace wsle
 			{
 				case ActionType::ADD_OBJECTS_STRING:   return ADD_OBJECTS_STRING::handle(j, socket);
 				case ActionType::REMOVE_OBJECTS_GROUP: return REMOVE_OBJECTS_GROUP::handle(j, socket);
+				case ActionType::GET_LEVEL_STRING:     return GET_LEVEL_STRING::handle(j, socket);
 			}
 		}
-		
+		fmt::println("Unknown type: {}", strtype);
 		sendResultData(ActionResult::INVALID_TYPE, socket);
 	}
 
@@ -81,7 +82,7 @@ namespace wsle
 			
 			cocos2d::CCArray* all = self->getAllObjects();
 			int objectCount = all->count();
-			if(objectCount <= 0) return sendResultData(ActionResult::EMPTY_LEVEL, socket);
+			if(objectCount <= 0) return sendResultData(ActionResult::OK, socket);
 			
 			cocos2d::CCArray* toDelete = cocos2d::CCArray::create();
 			
@@ -102,7 +103,6 @@ namespace wsle
 			}
 			sendResultData(ActionResult::OK, socket);
 		});
-
 	}
 	
 
@@ -125,6 +125,42 @@ namespace wsle
 			return groups;
 		}
 		return {};
+	}
+
+	void GET_LEVEL_STRING::handle(const json& j, ix::WebSocket& socket)
+	{
+		queueAction([j, &socket](gd::LevelEditorLayer* self){
+
+			cocos2d::CCArray* all = self->getAllObjects();
+			int objectCount = all->count();
+			if(objectCount <= 0) return sendResultData(ActionResult::EMPTY_LEVEL, socket);
+
+			std::string ret{};
+
+			constexpr int AVERAGE_OBJECT_STRING_LENGTH = 10; 
+			ret.reserve(objectCount * AVERAGE_OBJECT_STRING_LENGTH);
+
+			if(const auto& ls = j["levelsettings"]; ls.is_boolean() && ls.get<bool>())
+			{
+				ret.append(self->m_pLevelSettings->getSaveString());
+				ret.push_back(';');
+			}
+
+			for(int i = 0; i < objectCount; i++)
+			{
+				auto obj = reinterpret_cast<gd::GameObject*>(all->objectAtIndex(i));
+				ret.append(obj->getSaveString());
+				ret.push_back(';');
+			}
+			ret.pop_back(); //remove last ;
+
+			json retjson = {
+				{"ok", true},
+				{"value", ret}
+			};
+			socket.send(retjson.dump());
+		});
+
 	}
 	
 	void sendResultData(ActionResult result, ix::WebSocket& socket, std::source_location location)

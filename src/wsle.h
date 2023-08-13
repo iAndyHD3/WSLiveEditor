@@ -21,7 +21,8 @@ namespace wsle
 	enum class ActionType : int
 	{
 		ADD_OBJECTS_STRING = 0,
-		REMOVE_OBJECTS_GROUP
+		REMOVE_OBJECTS_GROUP,
+		GET_LEVEL_STRING
 	};
 
 	enum class ActionResult : int 
@@ -46,6 +47,10 @@ namespace wsle
 	{ 
 		void handle(const json&, ix::WebSocket&);
 		std::set<short> getGroupsFromJson(const json&);
+	}
+	namespace GET_LEVEL_STRING
+	{
+		void handle(const json&, ix::WebSocket&);
 	}
 	
 	

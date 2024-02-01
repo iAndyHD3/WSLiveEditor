@@ -1,12 +1,6 @@
-# Template Mod
+This mod will not do anything useful on its own,
+It is meant to be used by people programming tools to generate levels by code.
 
-Edit about.md to change this
+**This mod opens a websocket server and is constantly checking for messages, it is recommended to have the mod disabled if you will not be using it actively!**
 
-```cpp
-int main()
-{
-
-}
-
-test
-```
+Go to the [README.md](https://github.com/iAndyHD3/WSLiveEditor) on github to learn more

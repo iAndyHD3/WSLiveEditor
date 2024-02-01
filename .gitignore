@@ -51,3 +51,5 @@
 
 # clangd
 .cache/
+node_modules
+examples/js/package-lock.json

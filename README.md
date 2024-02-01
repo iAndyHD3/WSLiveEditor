@@ -1,6 +1,6 @@
 # What is this?
 
-WSLiveEditor is a helpful tool for quick testing levels that are generated programtically by a tool, by opening a Websocket Server it allows to remove old objects and add new ones without needing to re-open the editor or restart the game.
+WSLiveEditor is a helpful tool for quick testing levels that are generated programmatically by a tool, by opening a Websocket Server it allows to remove old objects and add new ones without needing to re-open the editor or restart the game.
 
 Up on entering the editor, a sebsocket server will be opened on `127.0.0.1:1313`
 

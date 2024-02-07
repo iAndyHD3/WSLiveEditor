@@ -2,9 +2,9 @@
 
 WSLiveEditor is a helpful tool for quick testing levels that are generated programmatically by a tool, by opening a Websocket Server it allows to remove old objects and add new ones without needing to re-open the editor or restart the game.
 
-Up on entering the editor, a sebsocket server will be opened on `127.0.0.1:1313`
+Up on entering the editor, a websocket server will be opened on `127.0.0.1:1313`
 
-## Usgae
+## Usage
 
 You send **actions** in form of a json object. At the moment there are only 2 types of actions.
 - The `ADD` action: adds objects, sent in form of level string
@@ -53,7 +53,7 @@ Additionally actions can have the keys `id`, `response` and `close`
 - The `close` key if set to true will close the connection with the websocket client
 
 # Example
-Spawn a defalt block at a random hard coded x position. The reomve group will be 9999
+Spawn a default block at a random hard coded x position. The remove group will be 9999
 
 ```js
 const WebSocket = require('ws');

@@ -5,5 +5,6 @@
 	"id": "iandyhd3.wsliveeditor",
 	"name": "WSLiveEditor",
 	"developer": "iAndyHD3",
-	"description": ""
+	"description": "WebSocket server to interact with the editor",
+	"repository": "https://github.com/iAndyHD3/WSLiveEditor"
 }

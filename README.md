@@ -1,4 +1,4 @@
-<img src='logo.png' width='180'>
+![banner2](https://github.com/tbvns/WSLiveEditor/assets/69420062/bb56d58e-92a8-44fb-b678-07e353739488)
 
 # What is this?
 

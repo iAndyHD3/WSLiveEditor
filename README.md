@@ -1,4 +1,5 @@
-<img src='logo.png' width='180'>
+![banner](banner.png)
+
 
 # What is this?
 

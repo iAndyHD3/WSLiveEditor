@@ -5,15 +5,17 @@ WSLiveEditor is a helpful tool for quick testing levels that are generated progr
 
 Up on entering the editor, a websocket server will be opened on `127.0.0.1:1313`
 
-## Usage
-All the usage are shown in the [Wiki](../../wiki).
+## Usage (developers)
+Check out the [wiki](../../wiki).
 
 ## FAQ
-Befor opening an issue, have a look at the [FAQ](../../wiki/FAQ), it could answear to your question.
+Befor opening an issue, look at the [FAQ](../../wiki/FAQ)
 
-## Tools using this mods:
-| Project | Creator |
-|-------------|------------|
-| [GD3D](https://github.com/tbvns/GD3D) | tbvns |
+## Projects using this mod:
+
+- [spwn-rewrite (old, unreleased)](https://github.com/Spu7Nix/SPWN-language/tree/RWRT%C2%B2%E2%81%BB%E1%B5%87%CA%B8%E1%B5%97%E1%B5%89%E1%B6%9C%E1%B5%92%E1%B5%88%E1%B5%89)
+- [G.js](https://github.com/RealSput/G.js)
+- [GD3D](https://github.com/tbvns/GD3D)
+
 
 ###### if you wish for your project to apear here, open an issue

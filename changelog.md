@@ -1,6 +1,5 @@
 # WSLiveEditor Changelog
 ## v1.0.1
-- Fixed some typo
-- Removed some unused code
+- minor changes
 ## v1.0.0
 - Rewrite to support geode

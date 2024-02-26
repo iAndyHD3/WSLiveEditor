@@ -8,8 +8,12 @@ Up on entering the editor, a websocket server will be opened on `127.0.0.1:1313`
 ## Usage
 All the usage are shown in the [Wiki](../../wiki).
 
-## Tools using this mods:
+## FAQ
+Befor opening an issue, have a look at the [FAQ](../../wiki/FAQ), it could answear to your question.
 
-[GD3D](https://github.com/tbvns/GD3D) - tbvns
+## Tools using this mods:
+| Project | Creator |
+|-------------|------------|
+| [GD3D](https://github.com/tbvns/GD3D) | tbvns |
 
 ###### if you wish for your project to apear here, open an issue

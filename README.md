@@ -1,4 +1,5 @@
-![banner](https://github.com/tbvns/WSLiveEditor/assets/69420062/c7e17ace-05c7-4c58-8db8-df61cb30b31e)
+<img src='logo.png' width='180'>
+
 # What is this?
 
 WSLiveEditor is a helpful tool for quick testing levels that are generated programmatically by a tool, by opening a Websocket Server it allows to remove old objects and add new ones without needing to re-open the editor or restart the game.

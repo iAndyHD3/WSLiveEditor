@@ -25,5 +25,9 @@ add_subdirectory($ENV{GEODE_SDK} ${CMAKE_CURRENT_BINARY_DIR}/geode)
 setup_geode_mod(${PROJECT_NAME})
 
 CPMAddPackage("gh:machinezone/IXWebSocket#e03c0be")
-
 target_link_libraries(${PROJECT_NAME} ixwebsocket)
+
+if (WIN32 AND CMAKE_CXX_COMPILER_ID STREQUAL "Clang" AND CMAKE_CXX_COMPILER_FRONTEND_VARIANT STREQUAL "GNU")
+    target_compile_options(ixwebsocket PRIVATE --target=i686-pc-windows-msvc)
+    target_link_options(ixwebsocket PRIVATE --target=i686-pc-windows-msvc)
+endif()

@@ -25,7 +25,7 @@ jobs:
         uses: geode-sdk/build-geode-mod@main
         with:
           bindings: iAndyHD3/bindings
-          bindings-ref: bindings2
+          bindings-ref: main
           combine: true
           target: ${{ matrix.config.target }}
           sdk: nightly

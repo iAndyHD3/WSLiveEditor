@@ -23,4 +23,4 @@ Open an issue or join the [discord server](https://discord.gg/xb6JWZnk9J)
 - [GD3D](https://github.com/tbvns/GD3D)
 
 
-###### if you wish for your project to apear here, open an issue
+###### if you wish for your project to apear here, open an issue or contact me on discord or twitter

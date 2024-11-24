@@ -3,12 +3,12 @@
 
 #include <Geode/loader/Log.hpp>
 
-bool GetLevelString::isValid(const matjson::Object& j)
+bool GetLevelString::isValid(const matjson::Value& j)
 {
     return true;
 }
 
-ActionResponse GetLevelString::run(LevelEditorLayer* editor, const matjson::Object& j)
+ActionResponse GetLevelString::run(LevelEditorLayer* editor, const matjson::Value& j)
 {
     return ActionResponse::make_success(matjson::Value(editor->getLevelString()));
 }

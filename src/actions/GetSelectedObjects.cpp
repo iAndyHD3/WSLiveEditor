@@ -7,7 +7,7 @@
 #include <Geode/loader/Log.hpp>
 #include <Geode/utils/cocos.hpp>
 
-bool GetSelectedObjects::isValid(const matjson::Object& j)
+bool GetSelectedObjects::isValid(const matjson::Value& j)
 {
     return IGetObjectsAction::isValid(j);
 }

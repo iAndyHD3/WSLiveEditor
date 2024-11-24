@@ -7,7 +7,7 @@
 #include <Geode/binding/GameObject.hpp>
 #include <Geode/binding/EditorUI.hpp>
 
-bool RemoveObjects::isValid(const matjson::Object& j)
+bool RemoveObjects::isValid(const matjson::Value& j)
 {
     if(auto group = checkTypeGetVal<int>(j, "group"); group.first)
     {
@@ -35,22 +35,31 @@ static bool hasGroup(GameObject* obj, int group)
     return false;
 }
 
-ActionResponse RemoveObjects::run(LevelEditorLayer* editor, const matjson::Object& j)
-{
-    int groupToDelete = j.find("group")->second.as_int();
 
-    auto toDelete = cocos2d::CCArray::create();
+
+ActionResponse RemoveObjects::run(LevelEditorLayer* editor, const matjson::Value& j)
+{
+    int groupToDelete = j["group"].asInt().unwrapOrDefault();
+
+    geode::cocos::CCArrayExt<GameObject*> toDelete;
     for(GameObject* obj : geode::cocos::CCArrayExt<GameObject*>(editor->m_objects))
     {
         if (hasGroup(obj, groupToDelete))
         {
-            toDelete->addObject(obj);
+            toDelete.push_back(obj);
         }
     }
-    
-    for (GameObject* obj : geode::cocos::CCArrayExt<GameObject*>(toDelete))
-    {
-        editor->m_editorUI->deleteObject(obj, false);
-    }
+
+    if(toDelete.size() == 0) return ActionResponse::make_success();
+
+
+    auto selected = editor->m_editorUI->getSelectedObjects();
+    editor->m_editorUI->deselectAll();
+
+    editor->m_editorUI->selectObjects(toDelete.inner(), false);
+
+    editor->m_editorUI->onDeleteSelected(nullptr);
+
+    editor->m_editorUI->selectObjects(selected, false);
     return ActionResponse::make_success();
 }

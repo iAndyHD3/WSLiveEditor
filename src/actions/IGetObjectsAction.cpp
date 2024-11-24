@@ -24,7 +24,7 @@ using geode::cocos::CCArrayExt;
 //    return max.as_int() > min.as_int();
 //}
 //TODO
-//bool IGetObjectsAction::Filters::isFilterJsonValid(const matjson::Object& actionJson)
+//bool IGetObjectsAction::Filters::isFilterJsonValid(const matjson::Value& actionJson)
 //{
 //    return true;
 //}
@@ -36,20 +36,18 @@ using geode::cocos::CCArrayExt;
 //}
 //
 //TODO
-//std::optional<IGetObjectsAction::Filters> IGetObjectsAction::Filters::getFromActionJson(const matjson::Object& j)
+//std::optional<IGetObjectsAction::Filters> IGetObjectsAction::Filters::getFromActionJson(const matjson::Value& j)
 //{
 //    return {};
 //}
 
 
-bool IGetObjectsAction::isValid(const matjson::Object& j)
+bool IGetObjectsAction::isValid(const matjson::Value& j)
 {
-    if(!isTypeOrKeyMissing<std::string>(j, "separator")) return false;
-
     return true;
 }
 
-std::vector<std::string> IGetObjectsAction::getFilteredObjectStrings(LevelEditorLayer* editor, const matjson::Object& j)
+std::vector<std::string> IGetObjectsAction::getFilteredObjectStrings(LevelEditorLayer* editor, const matjson::Value& j)
 {
     std::vector<std::string> ret;
     CCArrayExt<GameObject*> objects = getObjects(editor);
@@ -62,7 +60,7 @@ std::vector<std::string> IGetObjectsAction::getFilteredObjectStrings(LevelEditor
 }
 
 
-ActionResponse IGetObjectsAction::run(LevelEditorLayer* editor, const matjson::Object& j)
+ActionResponse IGetObjectsAction::run(LevelEditorLayer* editor, const matjson::Value& j)
 {
     //if we have a separator...
     std::vector<std::string> objstrings = getFilteredObjectStrings(editor, j);
@@ -79,7 +77,7 @@ ActionResponse IGetObjectsAction::run(LevelEditorLayer* editor, const matjson::O
 
     std::string& separator = *separatorOpt;
     std::string ret;
-    if(separator.empty()) [[unlikely]]
+    if(separator.empty()) [[likely]]
     {
         for(const auto& str : objstrings)
         {

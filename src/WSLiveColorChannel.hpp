@@ -35,7 +35,7 @@ struct WSLiveColorChannel
     }
 
     //throws
-    static WSLiveColorChannel getFromObject(const matjson::Object& obj)
+    static WSLiveColorChannel getFromObject(const matjson::Value& obj)
     {
         auto id = obj.find("id");
         if(id == obj.end()) throw std::exception("id key not found");

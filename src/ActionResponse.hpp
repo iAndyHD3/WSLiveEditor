@@ -18,7 +18,7 @@ struct ActionResponse
 
     inline bool send(ix::WebSocket* client, bool closeConnection = false)
     {
-        matjson::Object jsonresp;
+        matjson::Value jsonresp;
         if(status == Status::Success)
         {
             jsonresp["status"] = "successful";

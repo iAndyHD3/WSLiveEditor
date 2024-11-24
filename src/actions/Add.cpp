@@ -4,7 +4,7 @@
 
 #include <Geode/loader/Log.hpp>
 
-bool AddObjectsAction::isValid(const matjson::Object& j)
+bool AddObjectsAction::isValid(const matjson::Value& j)
 {
     if(auto objects = checkTypeGetVal<std::string>(j, "objects"); objects.first)
     {
@@ -15,8 +15,8 @@ bool AddObjectsAction::isValid(const matjson::Object& j)
 }
 
 
-ActionResponse AddObjectsAction::run(LevelEditorLayer* editor, const matjson::Object& j)
+ActionResponse AddObjectsAction::run(LevelEditorLayer* editor, const matjson::Value& j)
 {
-    editor->createObjectsFromString(j.find("objects")->second.as_string(), true, true);
+    editor->createObjectsFromString(j["objects"].asString().unwrap(), true, true);
     return ActionResponse::make_success(); 
 }

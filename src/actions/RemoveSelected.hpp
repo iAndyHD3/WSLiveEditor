@@ -1,3 +1,5 @@
+/*
+
 #pragma once
 #include <ActionInterface.hpp>
 
@@ -8,3 +10,4 @@ struct RemoveSelectedObjects : public ActionInterface
     
     ActionResponse run(LevelEditorLayer* editor, const matjson::Object&) override;
 };
+*/

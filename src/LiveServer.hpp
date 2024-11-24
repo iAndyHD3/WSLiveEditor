@@ -13,12 +13,13 @@ class LiveServer
 private:
     struct Action
     {
-        matjson::Object object;
+        matjson::Value object;
         ActionInterface* runner;
         ix::WebSocket* client;
         void checkAndCloseConnection() const
         {
-            if(auto closekey = object.find("close"); closekey != object.end() && closekey->second.is_bool() && closekey->second.as_bool())
+            //if(auto closekey = object.find("close"); closekey != object.end() && closekey->second.is_bool() && closekey->second.as_bool())
+            if(object["close"].asBool().unwrapOrDefault())
             {
                 client->close();
             }
@@ -35,7 +36,7 @@ private:
     void onConnectionOpen();
     void onServerCallback(std::shared_ptr<ix::ConnectionState> connectionState, ix::WebSocket& webSocket, const ix::WebSocketMessagePtr& msg);
 
-    inline void addActionNoLock(const matjson::Object& obj, ActionInterface* runner, ix::WebSocket* client)
+    inline void addActionNoLock(const matjson::Value& obj, ActionInterface* runner, ix::WebSocket* client)
     {
         actions.emplace_back(obj, runner, client);
     }
@@ -59,9 +60,9 @@ public:
         inline operator bool() { return action && status == Status::Success; }
     };
 
-    FindActionResult getActionForJson(const matjson::Object& actionJson);
+    FindActionResult getActionForJson(const matjson::Value& actionJson);
 
-    void handleAction(const matjson::Object& action, ix::WebSocket* client);
+    void handleAction(const matjson::Value& action, ix::WebSocket* client);
     
     template <typename... T>
     void AddActionRunners()

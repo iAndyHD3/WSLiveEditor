@@ -59,18 +59,18 @@ bool LS::init()
 
 void LS::onMessage(std::string_view message, ix::WebSocket* client)
 {
-    std::string jsonerror;
-    auto json = matjson::parse(message, jsonerror);
+    auto json = matjson::parse(message);
     if(!json)
     {
-        ActionResponse::make_error("invalid json: " + jsonerror).send(client);
+        auto err = json.unwrapErr();
+        ActionResponse::make_error(fmt::format("{}:{} :", err.line, err.column, err.message)).send(client);
         return;
     }
 
     switch((*json).type())
     {
         case matjson::Type::Object:
-            handleAction((*json).as_object(), client);
+            handleAction(json.unwrap(), client);
             break;
         //TODO mutliple actions
         //case matjson::type::Array:
@@ -78,14 +78,14 @@ void LS::onMessage(std::string_view message, ix::WebSocket* client)
     }
 }
 
-LS::FindActionResult LS::getActionForJson(const matjson::Object& actionJson)
+LS::FindActionResult LS::getActionForJson(const matjson::Value& actionJson)
 {
     using enum LS::FindActionResult::Status;
 
     LS::FindActionResult ret {.status = NotFound, .action = nullptr};
 
     for(const auto& action : actionRunners)
-        if(action->isType(actionJson))
+        if(action->isJsonActionType(actionJson))
             ret.action = action.get();
 
     if(!ret.action) return ret;
@@ -95,7 +95,7 @@ LS::FindActionResult LS::getActionForJson(const matjson::Object& actionJson)
 }
 
 
-void LS::handleAction(const matjson::Object& actionJson, ix::WebSocket* client)
+void LS::handleAction(const matjson::Value& actionJson, ix::WebSocket* client)
 {
     //for(const auto& actionType : actionRunners)
     //{
@@ -189,11 +189,12 @@ struct LSHooks : geode::Modify<LSHooks, LevelEditorLayer>
         m_fields->server.AddActionRunners<
                 AddObjectsAction,
                 RemoveObjects,
-                RemoveSelectedObjects,
+                //RemoveSelectedObjects,
                 GetLevelString,
                 GetSelectedObjects>();
         m_fields->server.init();
         this->schedule(schedule_selector(LSHooks::performQueuedActions), 0.0f);
+        geode::log::info("STARTED WSLIVEEDITOR SERVER");
 
         return true;
     }

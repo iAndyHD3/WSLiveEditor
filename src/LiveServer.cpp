@@ -157,10 +157,10 @@ void LS::runQueuedActions(LevelEditorLayer* editor)
     if(queuedActions)
     {
         std::lock_guard lock(actionMutex);
-        for(const auto& action : actions)
+        for(const LiveServer::Action& action : actions)
         {
             geode::log::info("Running action of type {}", action.runner->type());
-            if(action.runner->run(editor, action.object).send(action.client))
+            if(action.runner->run(editor, action.response).send(action.client))
             {
                 action.checkAndCloseConnection();
             }
@@ -185,14 +185,16 @@ struct LSHooks : geode::Modify<LSHooks, LevelEditorLayer>
     bool init(GJGameLevel* level, bool idk)
     {
         if(!LevelEditorLayer::init(level, idk)) return false;
+        
+        auto& fields = *m_fields.self();
 
-        m_fields->server.AddActionRunners<
-                AddObjectsAction,
-                RemoveObjects,
-                //RemoveSelectedObjects,
-                GetLevelString,
-                GetSelectedObjects>();
-        m_fields->server.init();
+        fields.server.addSingleRunner<AddObjectsAction>();
+        fields.server.addSingleRunner<RemoveObjects>();
+        //fields.server.addSingleRunner<RemoveSelectedObjects>();
+        fields.server.addSingleRunner<GetLevelString>();
+        fields.server.addSingleRunner<GetSelectedObjects>();
+
+        fields.server.init();
         this->schedule(schedule_selector(LSHooks::performQueuedActions), 0.0f);
         geode::log::info("STARTED WSLIVEEDITOR SERVER");
 

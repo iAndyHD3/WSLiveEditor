@@ -41,6 +41,5 @@ protected:
     {
         auto res = j[key].as<T>();
         return std::pair<bool, T>({res.isOk(), res.unwrapOrDefault()});
-
     }
 };

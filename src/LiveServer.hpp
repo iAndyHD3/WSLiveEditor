@@ -13,13 +13,13 @@ class LiveServer
 private:
     struct Action
     {
-        matjson::Value object;
+        matjson::Value response;
         ActionInterface* runner;
         ix::WebSocket* client;
         void checkAndCloseConnection() const
         {
             //if(auto closekey = object.find("close"); closekey != object.end() && closekey->second.is_bool() && closekey->second.as_bool())
-            if(object["close"].asBool().unwrapOrDefault())
+            if(response["close"].asBool().unwrapOr(false))
             {
                 client->close();
             }
@@ -68,5 +68,11 @@ public:
     void AddActionRunners()
     {
         (actionRunners.emplace_back(std::make_unique<T>()), ...);
+    }
+
+    template<typename T>
+    void addSingleRunner()
+    {
+        actionRunners.emplace_back(std::make_unique<T>());
     }
 };

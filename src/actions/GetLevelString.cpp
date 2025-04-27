@@ -10,5 +10,5 @@ bool GetLevelString::isValid(const matjson::Value& j)
 
 ActionResponse GetLevelString::run(LevelEditorLayer* editor, const matjson::Value& j)
 {
-    return ActionResponse::make_success(matjson::Value{editor->getLevelString()});
+    return ActionResponse::make_success(matjson::Value(std::string(editor->getLevelString())));
 }

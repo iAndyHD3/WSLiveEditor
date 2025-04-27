@@ -38,7 +38,10 @@ private:
 
     inline void addActionNoLock(const matjson::Value& obj, ActionInterface* runner, ix::WebSocket* client)
     {
-        actions.emplace_back(obj, runner, client);
+        auto act = actions.emplace_back();
+        act.response = obj;
+        act.runner = runner;
+        act.client = client;
     }
 
 public:

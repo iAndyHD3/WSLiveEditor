@@ -17,6 +17,7 @@ bool AddObjectsAction::isValid(const matjson::Value& j)
 
 ActionResponse AddObjectsAction::run(LevelEditorLayer* editor, const matjson::Value& j)
 {
-    editor->createObjectsFromString(j["objects"].asString().unwrap(), true, true);
+    auto str = j["objects"].asString().unwrap();
+    editor->createObjectsFromString(str, true, true);
     return ActionResponse::make_success(); 
 }

@@ -22,5 +22,12 @@
 		"utility",
 		"developer",
 		"editor"
-	]
+	],
+    "settings": {
+        "port": {
+            "type": "int",
+            "default": 1313,
+            "name": "WebSocket Server Port"
+        }
+    }
 }

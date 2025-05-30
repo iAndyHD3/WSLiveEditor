@@ -1,5 +1,5 @@
 cmake_minimum_required(VERSION 3.21)
-set(CMAKE_CXX_STANDARD 20)
+set(CMAKE_CXX_STANDARD 23)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
 if ("${CMAKE_SYSTEM_NAME}" STREQUAL "iOS" OR IOS)
     set(CMAKE_OSX_ARCHITECTURES "arm64")
@@ -15,13 +15,6 @@ project(WSLiveEditor VERSION 1.0.0)
 
 file(GLOB SOURCES
     src/main.cpp
-    src/LiveServer.cpp
-    src/actions/Add.cpp
-    src/actions/GetLevelString.cpp
-    src/actions/GetSelectedObjects.cpp
-    src/actions/IGetObjectsAction.cpp
-    src/actions/Remove.cpp
-    src/actions/RemoveSelected.cpp
 )
 
 
@@ -38,6 +31,16 @@ add_subdirectory($ENV{GEODE_SDK} ${CMAKE_CURRENT_BINARY_DIR}/geode)
 setup_geode_mod(${PROJECT_NAME})
 
 CPMAddPackage("gh:machinezone/IXWebSocket#e03c0be")
-target_link_libraries(${PROJECT_NAME} ixwebsocket)
+
+FetchContent_Declare(
+  proxy
+  GIT_REPOSITORY https://github.com/microsoft/proxy.git
+  GIT_TAG main
+  GIT_SHALLOW TRUE
+)
+
+FetchContent_MakeAvailable(proxy)
+
+target_link_libraries(${PROJECT_NAME} ixwebsocket msft_proxy)
 
 target_include_directories(${PROJECT_NAME} PRIVATE src)

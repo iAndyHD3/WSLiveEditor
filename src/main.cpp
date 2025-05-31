@@ -14,6 +14,8 @@
 #include <mutex>
 #include "Geode/loader/ModEvent.hpp"
 #include "actions/ADD_OBJECTS.hpp"
+#include "actions/REMOVE_OBJECTS.hpp"
+#include "actions/GET_LEVEL_STRING.hpp"
 #include "proxy/proxy.h"
 
 
@@ -28,7 +30,7 @@ std::string json = R"(
 
 struct ActionClient
 {
-    pro::proxy<Actionable> action;
+    ActionableProxy action;
     std::reference_wrapper<ix::WebSocket> client;
 };
 
@@ -45,7 +47,10 @@ void handleMessage(std::shared_ptr<ix::ConnectionState> _, ix::WebSocket & webSo
 $on_mod(Loaded)
 {
     ix::initNetSystem();
+    
+    // @geode-ignore(unknown-setting)
     int port = geode::Mod::get()->getSettingValue<int>("port");
+
     ws = new ix::WebSocketServer(port);
     ws->disablePerMessageDeflate();
     ws->disablePong();
@@ -54,20 +59,22 @@ $on_mod(Loaded)
     geode::log::info("start ws: {}", true);
 }
 
-
-std::optional<pro::proxy<Actionable>> getAction(const matjson::Value& json)
+std::optional<ActionableProxy> getAction(const matjson::Value& json)
 {
-    std::optional<ADD_OBJECTS> opt = ADD_OBJECTS::parse(json);
-    if(!opt) return {};
-    return pro::make_proxy<Actionable>(*opt);
+    #define CHECK_RET_ACTION(name) if(auto opt = name::parse(json)) return pro::make_proxy<Actionable>(*opt);
+
+    CHECK_RET_ACTION(ADD_OBJECTS)
+    CHECK_RET_ACTION(REMOVE_OBJECTS)
+    CHECK_RET_ACTION(GET_LEVEL_STRING)
+    return {};
 }
+
 
 void handleMessage(std::shared_ptr<ix::ConnectionState> _, ix::WebSocket& client, const ix::WebSocketMessagePtr& msg)
 {
     if(msg->type != ix::WebSocketMessageType::Message) return;
     
-    geode::log::info("GOT: {}", msg->str);
-    geode::Result<matjson::Value, matjson::ParseError> json = matjson::parse(msg->str);
+    geode::Result<mjValue, mj::ParseError> json = matjson::parse(msg->str);
     if (!json)
     {
         Response::json_error(json.unwrapErr()).send(client);
@@ -75,7 +82,7 @@ void handleMessage(std::shared_ptr<ix::ConnectionState> _, ix::WebSocket& client
     }
 
     
-    if(std::optional<pro::proxy<Actionable>> proxy = getAction(*json))
+    if(std::optional<ActionableProxy> proxy = getAction(*json))
     {
         std::lock_guard l(actionsVecMutex);
         actionsVec.push_back(ActionClient{std::move(*proxy), client});
@@ -85,11 +92,6 @@ void handleMessage(std::shared_ptr<ix::ConnectionState> _, ix::WebSocket& client
     {
         Response::json_error("wrong action object. check type and keys").send(client);
     }
-}
-
-void handleAction(pro::proxy<Actionable> action)
-{
-    action->log();
 }
 
 class $modify(LiveEditor, LevelEditorLayer)

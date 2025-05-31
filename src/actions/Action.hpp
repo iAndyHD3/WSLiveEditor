@@ -1,3 +1,5 @@
+#pragma once
+
 #include "Geode/binding/LevelEditorLayer.hpp"
 #include "Geode/loader/Log.hpp"
 #include "proxy/proxy_macros.h"
@@ -8,8 +10,22 @@
 enum class ActionType
 {
     ADD_OBJECTS,
-    REMOVE_OBJECTS
+    REMOVE_OBJECTS,
+    GET_LEVEL_STRING
 };
+
+using mjValue = matjson::Value;
+namespace mj = matjson;
+
+
+#define DEFINE_PARSE_FUNCTION(ACTION_NAME)                                      \
+    static std::optional<ACTION_NAME> parse(const matjson::Value& parsed) {    \
+        ACTION_NAME ret;                                                       \
+        auto common = ActionCommon::parse<ActionType::ACTION_NAME>(parsed);    \
+        if (!common) return {};                                                \
+        ret.common = *common;                                                  \
+        return ACTION_NAME::load(ret, parsed);                                 \
+    }
 
 
 
@@ -19,6 +35,7 @@ inline std::string_view ActionTypeToString(ActionType a)
     {
         case ActionType::ADD_OBJECTS: return "ADD_OBJECTS";
         case ActionType::REMOVE_OBJECTS: return "REMOVE_OBJECTS";
+        case ActionType::GET_LEVEL_STRING: return "GET_LEVEL_STRING";
     }
 }
 
@@ -68,6 +85,7 @@ struct Response
 
     static Response json_error(const std::string& error)
     {
+        geode::log::error("error running action, {}", error);
         return Response{
             .success = false,
             .close = false,
@@ -87,13 +105,13 @@ struct Response
 };
 
 PRO_DEF_MEM_DISPATCH(FnExecute, execute);
-PRO_DEF_MEM_DISPATCH(FnLog, log);
 
 struct Actionable : pro::facade_builder
     ::add_convention<FnExecute, Response(LevelEditorLayer*)>
-    ::add_convention<FnLog, void()>
     ::build{};
 
+
+using ActionableProxy = pro::proxy<Actionable>;
 
 
 
@@ -106,12 +124,12 @@ struct ActionCommon
     std::optional<matjson::Value> echo;
 
     template<ActionType action_type>
-    static std::optional<ActionCommon> parse(const matjson::Value& parsed)
+    static std::optional<ActionCommon> parse(const mjValue& parsed)
     {
-        if(!parsed.isObject()) return {};
-
-        if(parsed.get<std::string>("action").unwrapOrDefault() != ActionTypeToString(action_type))
+        auto parsedAction = parsed.get<std::string>("action").unwrapOrDefault();
+        if(parsedAction != ActionTypeToString(action_type))
         {
+            geode::log::debug("{} != {}", parsedAction, ActionTypeToString(action_type));
             return {};
         }
 
@@ -120,7 +138,7 @@ struct ActionCommon
         ret.close = parsed.get<bool>("close").unwrapOr(false);
         if(parsed.contains("echo"))
         {
-            ret.echo.emplace(parsed.get("close").unwrap());
+            ret.echo.emplace(parsed.get("echo").unwrap());
         }
         ret.type = action_type;
 

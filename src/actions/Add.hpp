@@ -1,14 +1,12 @@
 #pragma once
-#include <ActionInterface.hpp>
+#include "ActionResponse.hpp"
 
-struct AddObjectsAction : public ActionInterface
+struct LevelEditorLayer;
+
+struct AddObjectsAction
 {
-    bool isValid(const matjson::Value&) override;
-    inline std::string_view type() override { return "ADD_OBJECTS"; }
+    static constexpr auto ACTION_TYPE = "ADD_OBJECTS";
+    static bool isValid(const matjson::Value&);
 
-    //'ADD' for compat with < 2.0 versions
-    inline bool isType(std::string_view actionname) override {
-        return actionname == type() || actionname == "ADD";
-    }
-    ActionResponse run(LevelEditorLayer* editor, const matjson::Value&) override;
+    static ActionResponse run(LevelEditorLayer* editor, const matjson::Value&);
 };

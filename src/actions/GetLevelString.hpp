@@ -1,9 +1,12 @@
 #pragma once
-#include <ActionInterface.hpp>
 
-struct GetLevelString : public ActionInterface
+struct LevelEditorLayer;
+#include <ActionResponse.hpp>
+#include <matjson.hpp>
+
+struct GetLevelString
 {
-    bool isValid(const matjson::Value&) override;
-    inline std::string_view type() override { return "GET_LEVEL_STRING"; }
-    ActionResponse run(LevelEditorLayer* editor, const matjson::Value&) override;
+    static constexpr auto ACTION_TYPE = "GET_LEVEL_STRING";  
+    static bool isValid(const matjson::Value&);
+    static ActionResponse run(LevelEditorLayer* editor, const matjson::Value&);
 };

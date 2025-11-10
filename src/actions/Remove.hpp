@@ -1,14 +1,13 @@
 #pragma once
-#include <ActionInterface.hpp>
+#include <ActionResponse.hpp>
+#include <Geode/binding/LevelEditorLayer.hpp>
+#include <matjson.hpp>
 
-struct RemoveObjects : public ActionInterface
+struct LevelEditorLayer;
+
+struct RemoveObjects
 {
-    bool isValid(const matjson::Value&) override;
-    inline std::string_view type() override { return "REMOVE_OBJECTS"; } 
-
-    //'REMOVE' for compat with < 2.0 versions
-    inline bool isType(std::string_view actionname) override {
-        return actionname == type() || actionname == "REMOVE";
-    }
-    ActionResponse run(LevelEditorLayer* editor, const matjson::Value&) override;
+    static constexpr auto ACTION_TYPE = "REMOVE_OBJECTS";
+    static bool isValid(const matjson::Value&);
+    static ActionResponse run(LevelEditorLayer* editor, const matjson::Value&);
 };

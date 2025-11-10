@@ -3,9 +3,12 @@
 #include <string>
 
 #include <Geode/loader/Log.hpp>
+#include <Geode/binding/LevelEditorLayer.hpp>
 
 bool AddObjectsAction::isValid(const matjson::Value& j)
 {
+    if(!LevelEditorLayer::get()) return false;
+    
     if(auto objects = checkTypeGetVal<std::string>(j, "objects"); objects.first)
     {
         //atleast an object id specifier (usually even the first 2 chars)

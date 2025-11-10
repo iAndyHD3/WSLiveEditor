@@ -16,6 +16,22 @@ struct ActionResponse
     std::optional<std::string> error_message;
     std::optional<matjson::Value> response;
 
+
+    std::string get() {
+        matjson::Value jsonresp;
+        if(status == Status::Success)
+        {
+            jsonresp["status"] = "successful";
+            if(response) jsonresp["response"] = *response;
+        }
+        else if(status == Status::Error)
+        {
+            jsonresp["status"] = "error";
+            jsonresp["message"] = error_message.value_or("Unknown error running action");
+        }
+        return matjson::Value(jsonresp).dump(matjson::NO_INDENTATION);
+    }
+
     inline bool send(ix::WebSocket* client, bool closeConnection = false)
     {
         matjson::Value jsonresp;
@@ -29,7 +45,7 @@ struct ActionResponse
             jsonresp["status"] = "error";
             jsonresp["message"] = error_message.value_or("Unknown error running action");
         }
-        return client->sendText(matjson::Value(jsonresp).dump(matjson::NO_INDENTATION)).success;
+        return client->sendText(get()).success;
     }
 
     inline static ActionResponse make_success(const std::optional<matjson::Value>& resp_opt = {})
@@ -51,3 +67,24 @@ struct ActionResponse
         };
     }
 };
+
+
+
+    template<typename T>
+    [[nodiscard]] static std::optional<T> getOpt(const matjson::Value& j, std::string_view key)
+    {
+        return j[key].as<T>().ok();
+    }
+
+
+    template<typename T>
+    [[nodiscard]] static bool checkType(const matjson::Value& j, std::string_view key)
+    {
+        return j[key].as<T>().isOk();
+    }
+    template<typename T>
+    [[nodiscard]] static std::pair<bool, T> checkTypeGetVal(const matjson::Value& j, std::string_view key)
+    {
+        auto res = j[key].as<T>();
+        return std::pair<bool, T>({res.isOk(), res.unwrapOrDefault()});
+    }

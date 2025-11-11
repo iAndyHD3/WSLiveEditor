@@ -1,9 +1,12 @@
 #pragma once
-#include "IGetObjectsAction.hpp"
+#include <Geode/binding/LevelEditorLayer.hpp>
+#include <Geode/binding/GameObject.hpp>
+#include <Geode/Utils.hpp>
 
-struct GetSelectedObjects : public IGetObjectsAction
+
+struct GetSelectedObjects
 {
-    bool isValid(const matjson::Value&) override;
-    inline std::string_view type() override { return "GET_SELECTED_OBJECTS"; }
-    virtual geode::cocos::CCArrayExt<GameObject*> getObjects(LevelEditorLayer* editor) override;
+    static constexpr auto ACTION_TYPE = "GET_SELECTED_OBJECTS";
+    static bool isValid(const matjson::Value&);
+    static geode::cocos::CCArrayExt<GameObject*> getObjects(LevelEditorLayer* editor);
 };

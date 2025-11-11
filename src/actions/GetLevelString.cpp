@@ -2,6 +2,7 @@
 #include "ActionResponse.hpp"
 
 #include <Geode/loader/Log.hpp>
+#include <Geode/binding/LevelEditorLayer.hpp>
 
 bool GetLevelString::isValid(const matjson::Value& j)
 {

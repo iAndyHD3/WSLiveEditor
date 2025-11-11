@@ -1,6 +1,5 @@
 #include "GetSelectedObjects.hpp"
 #include "Geode/binding/LevelEditorLayer.hpp"
-#include "IGetObjectsAction.hpp"
 
 #include <Geode/binding/EditorUI.hpp>
 #include <Geode/binding/GameObject.hpp>
@@ -9,10 +8,11 @@
 
 bool GetSelectedObjects::isValid(const matjson::Value& j)
 {
-    return IGetObjectsAction::isValid(j);
+    return true;
 }
 
 geode::cocos::CCArrayExt<GameObject*> GetSelectedObjects::getObjects(LevelEditorLayer* editor)
 {
     return editor->m_editorUI->getSelectedObjects();
 }
+

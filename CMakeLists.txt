@@ -15,11 +15,11 @@ project(WSLiveEditor VERSION 1.0.0)
 
 file(GLOB SOURCES
     src/main.cpp
+    src/FlexibleServer.cpp
     src/LiveServer.cpp
     src/actions/Add.cpp
     src/actions/GetLevelString.cpp
     src/actions/GetSelectedObjects.cpp
-    src/actions/IGetObjectsAction.cpp
     src/actions/Remove.cpp
     src/actions/RemoveSelected.cpp
 )
@@ -40,46 +40,19 @@ setup_geode_mod(${PROJECT_NAME})
 CPMAddPackage("gh:machinezone/IXWebSocket#e03c0be")
 
 
-
 CPMAddPackage(
-    NAME libzmq
-    GITHUB_REPOSITORY zeromq/libzmq
-    GIT_TAG 7a7bfa1
-    OPTIONS "WITH_LIBSODIUM OFF"
-    "WITH_PERF_TOOL OFF"
-    "WITH_DOCS OFF"
-    "WITH_TESTS OFF"
-    "WITH_TOOLS OFF"
-    "WITH_LIBUNWIND OFF"
-    "WITH_SYSTEMD OFF"
-    "WITH_OPENPGM OFF"
-    "WITH_DRAFTS OFF"
-    "WITH_CURVE OFF"
-    "WITH_LZ4 OFF"
-    "WITH_GSSAPI OFF"
-    "WITH_LIBSODIUM OFF"
-    "WITH_LIBZMQ_STATIC ON"
-    "WITH_LIBZMQ_SHARED OFF"
-    "WITH_TLS OFF"
-    "WITH_VALGRIND OFF"
-    "WITH_ASAN OFF"
-    "WITH_UBSAN OFF"
-    "WITH_MSAN OFF"
-    "WITH_TSAN OFF"
-    "WITH_CPACK OFF"
-    "BUILD_SHARED OFF"
-    "BUILD_TESTS OFF"
-    "ZMQ_BUILD_TESTS OFF"
-    "ZMQ_STATIC ON"
+  NAME libzmq
+  GITHUB_REPOSITORY zeromq/libzmq
+  GIT_TAG v4.3.5
+  OPTIONS "CMAKE_CXX_FLAGS -w"
+  OPTIONS "BUILD_TESTS OFF"
+  OPTIONS "BUILD_SHARED OFF"
 )
-
-
 CPMAddPackage(
-    NAME cppzmq
-    GITHUB_REPOSITORY zeromq/cppzmq
-    GIT_TAG v4.10.0
-    OPTIONS
-    "CPPZMQ_BUILD_TESTS OFF" 
+  NAME cppzmq
+  GITHUB_REPOSITORY zeromq/cppzmq
+  GIT_TAG v4.11.0
+  OPTIONS "CPPZMQ_BUILD_TESTS OFF"
 )
 
 CPMAddPackage("gh:zhihaoy/nontype_functional#bdb0987")

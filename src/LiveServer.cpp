@@ -10,50 +10,61 @@
 #include <Geode/binding/LevelEditorLayer.hpp>
 #include <Geode/loader/Log.hpp>
 #include <matjson.hpp>
-#include <memory>
 #include <string_view>
 
 #include <Geode/modify/LevelEditorLayer.hpp>
 #include <fmt/format.h>
 
+#include <ZeroMQServer.hpp>
+#include <std23/function_ref.h>
+#include <thread>
+
+std::string onMessage(std::string_view msg);
+std::unique_ptr<ZmqIpcServer> zmqServer;
 
 
-std::unique_ptr<FlexibleServer> server = std::make_unique<FlexibleServer>();
-matjson::Value actionToRun;
-
-
-
-void handleAction()
+std::string handleAction(const matjson::Value& action)
 {
+    auto action_type = action.get<std::string>("action");
+    if(!action_type) return ActionResponse::make_error("no action found").get();
+    if(AddObjectsAction::ACTION_TYPE == *action_type && AddObjectsAction::isValid(action))
+        return AddObjectsAction::run(LevelEditorLayer::get(), action).get();
 
-    geode::Loader::get()->queueInMainThread([]() -> void {
-        auto action_type = actionToRun.get<std::string>("action");
-        if(!action_type) return;
-        if(AddObjectsAction::ACTION_TYPE == *action_type && AddObjectsAction::isValid(actionToRun))
-        {
-            
-        }
-    });
-
+    return ActionResponse::make_error("No matching action found").get();
 }
 
-
-void onMessage(std::string_view msg)
+//runs on polling thread still
+std::string onMessage(std::string_view msg)
 {
     auto json = matjson::parse(msg);
     if(!json)
     {
         auto err = json.unwrapErr();
-        server->send(ActionResponse::make_error(fmt::format("{}:{} :", err.line, err.column, err.message)).get());
-        actionToRun = json.unwrap();
+        return ActionResponse::make_error(fmt::format("{}:{} :", err.line, err.column, err.message)).get();
     }
+    std::string response;
+    std::atomic<bool> response_ready = false;
+
     
-    handleAction();
+    geode::Loader::get()->queueInMainThread([&](){
+        response = handleAction(json.unwrap());
+        response_ready.store(true);
+    });
+
+    while(!response_ready.load())
+    {
+        std::this_thread::sleep_for(std::chrono::milliseconds(10));
+    }
+    return response;
 }
 
-
-$on_mod(Loaded)
-{
-    server->initializeWebSocket(1313);
-    server->addListener(onMessage);
+$on_mod(Loaded) {
+    try {
+    zmqServer = std::make_unique<ZmqIpcServer>("iandyhd3-wsliveeditor", onMessage);
+    zmqServer->start();
+    } catch(std::exception e) {
+        geode::log::error("{}", e.what());
+        return;
+    }
+        geode::log::error("all good");
 }

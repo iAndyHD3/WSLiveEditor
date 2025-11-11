@@ -49,6 +49,8 @@ CPMAddPackage(
         "ZMQ_BUILD_TESTS OFF"
         "BUILD_SHARED OFF"
         "BUILD_STATIC ON"
+        "WITH_LIBSODIUM OFF"
+        "WITH_TLS OFF"
 )
 
 CPMAddPackage(

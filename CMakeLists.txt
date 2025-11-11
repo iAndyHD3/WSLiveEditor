@@ -43,8 +43,7 @@ CPMAddPackage("gh:machinezone/IXWebSocket#e03c0be")
 CPMAddPackage(
   NAME libzmq
   GITHUB_REPOSITORY zeromq/libzmq
-  GIT_TAG v4.3.5
-  OPTIONS "CMAKE_CXX_FLAGS -w"
+  GIT_COMMIT 7a7bfa1
   OPTIONS "BUILD_TESTS OFF"
   OPTIONS "BUILD_SHARED OFF"
 )

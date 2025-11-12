@@ -4,6 +4,7 @@
 #include "actions/Add.hpp"
 #include "actions/Remove.hpp"
 #include "actions/GetLevelString.hpp"
+#include "actions/GetSelectedObjects.hpp"
 
 #include <Geode/Geode.hpp>
 #include <Geode/binding/GJGameLevel.hpp>
@@ -27,8 +28,16 @@ std::string handleAction(const matjson::Value& action)
 {
     auto action_type = action.get<std::string>("action");
     if(!action_type) return ActionResponse::make_error("no action found").get();
-    if(AddObjectsAction::ACTION_TYPE == *action_type && AddObjectsAction::isValid(action))
-        return AddObjectsAction::run(LevelEditorLayer::get(), action).get();
+
+#define DO_ACTION_CHECK(FN_ACTION_TYPE) \
+    if(FN_ACTION_TYPE::ACTION_TYPE == *action_type && FN_ACTION_TYPE::isValid(action))\
+        return FN_ACTION_TYPE::run(LevelEditorLayer::get(), action).get()
+    
+    DO_ACTION_CHECK(AddObjectsAction);
+    DO_ACTION_CHECK(RemoveObjects);
+    DO_ACTION_CHECK(GetLevelString);
+
+
 
     return ActionResponse::make_error("No matching action found").get();
 }

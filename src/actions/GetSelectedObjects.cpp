@@ -8,7 +8,7 @@
 
 bool GetSelectedObjects::isValid(const matjson::Value& j)
 {
-    return true;
+    return LevelEditorLayer::get() != nullptr;
 }
 
 geode::cocos::CCArrayExt<GameObject*> GetSelectedObjects::getObjects(LevelEditorLayer* editor)

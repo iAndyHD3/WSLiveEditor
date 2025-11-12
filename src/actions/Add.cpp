@@ -4,6 +4,14 @@
 
 #include <Geode/loader/Log.hpp>
 #include <Geode/binding/LevelEditorLayer.hpp>
+#include <Geode/modify/LevelEditorLayer.hpp>
+#include <Geode/binding/GameObject.hpp>
+
+// class $modify(LevelEditorLayer) {
+//     struct Fields {
+//         std::vector<GameObject*>
+//     }
+// };
 
 bool AddObjectsAction::isValid(const matjson::Value& j)
 {

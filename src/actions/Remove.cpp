@@ -2,6 +2,7 @@
 #include "ActionResponse.hpp"
 
 #include <Geode/Geode.hpp>
+#include <Geode/binding/LevelEditorLayer.hpp>
 #include <Geode/utils/cocos.hpp>
 #include <Geode/loader/Log.hpp>
 #include <Geode/binding/GameObject.hpp>
@@ -9,6 +10,8 @@
 
 bool RemoveObjects::isValid(const matjson::Value& j)
 {
+    if(!LevelEditorLayer::get()) return false;
+    
     if(auto group = checkTypeGetVal<int>(j, "group"); group.first)
     {
         return group.second >= 0 && group.second <= 99'999;

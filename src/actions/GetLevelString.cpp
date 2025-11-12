@@ -6,7 +6,7 @@
 
 bool GetLevelString::isValid(const matjson::Value& j)
 {
-    return true;
+    return LevelEditorLayer::get() != nullptr;
 }
 
 ActionResponse GetLevelString::run(LevelEditorLayer* editor, const matjson::Value& j)

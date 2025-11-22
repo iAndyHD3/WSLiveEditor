@@ -1,26 +1,22 @@
 {
-	"geode": "4.9.0",
-	"gd": {
-        "win": "2.2074",
-        "android": "2.2074",
-        "mac": "2.2074"
-    },
-	"version": "v2.6.0",
-	"id": "iandyhd3.wsliveeditor",
-	"name": "WSLiveEditor",
-	"developer": "iAndyHD3",
-	"description": "WebSocket server to interact with the editor",
-	"links": {
-		"source": "https://github.com/iAndyHD3/WSLiveEditor",
-		"community": "https://discord.gg/tP8tbFPVu4"
-	},
-	"issues": {
-		"url": "https://github.com/iAndyHD3/WSLiveEditor/issues",
-		"info": "If you encounter issues (like crashes) please report it to the GitHub issues page."
-	},
-	"tags":[
-		"utility",
-		"developer",
-		"editor"
-	]
+  "geode": "4.10.0",
+  "gd": {
+    "win": "2.2074",
+    "android": "2.2074",
+    "mac": "2.2074"
+  },
+  "version": "v2.6.0",
+  "id": "iandyhd3.wsliveeditor",
+  "name": "WSLiveEditor",
+  "developer": "iAndyHD3",
+  "description": "WebSocket server to interact with the editor",
+  "links": {
+    "source": "https://github.com/iAndyHD3/WSLiveEditor",
+    "community": "https://discord.gg/tP8tbFPVu4"
+  },
+  "issues": {
+    "url": "https://github.com/iAndyHD3/WSLiveEditor/issues",
+    "info": "If you encounter issues (like crashes) please report it to the GitHub issues page."
+  },
+  "tags": ["utility", "developer", "editor"]
 }

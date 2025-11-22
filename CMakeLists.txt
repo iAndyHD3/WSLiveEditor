@@ -15,7 +15,7 @@ project(WSLiveEditor VERSION 1.0.0)
 
 file(GLOB SOURCES
     src/main.cpp
-    src/FlexibleServer.cpp
+    #src/FlexibleServer.cpp
     src/LiveServer.cpp
     src/actions/Add.cpp
     src/actions/GetLevelString.cpp
@@ -37,31 +37,21 @@ add_subdirectory($ENV{GEODE_SDK} ${CMAKE_CURRENT_BINARY_DIR}/geode)
 
 setup_geode_mod(${PROJECT_NAME})
 
-CPMAddPackage("gh:machinezone/IXWebSocket#e03c0be")
-
-
 CPMAddPackage(
-  NAME libzmq
-  GITHUB_REPOSITORY "zeromq/libzmq"
-  GIT_TAG "7a7bfa1"
-  OPTIONS
-        "WITH_PERF_TOOL OFF"
-        "ZMQ_BUILD_TESTS OFF"
-        "BUILD_SHARED OFF"
-        "BUILD_STATIC ON"
-        "WITH_LIBSODIUM OFF"
-        "WITH_TLS OFF"
+  NAME msft_proxy4
+  GIT_TAG 4.0.0 # or above
+  GIT_REPOSITORY https://github.com/microsoft/proxy.git
+  OPTIONS "BUILD_TESTING OFF; PROJECT_IS_TOP_LEVEL OFF"
 )
 
+CPMAddPackage("gh:stephenberry/glaze@6.0.3")
+
 CPMAddPackage(
-  NAME cppzmq
-  GITHUB_REPOSITORY zeromq/cppzmq
-  GIT_TAG v4.11.0
-  OPTIONS "CPPZMQ_BUILD_TESTS OFF"
+  GITHUB_REPOSITORY ithewei/libhv
+  GIT_TAG b2dac28
+  OPTIONS "BUILD_EXAMPLES OFF;BUILD_SHARED OFF"
 )
 
-CPMAddPackage("gh:zhihaoy/nontype_functional#bdb0987")
 
-target_link_libraries(${PROJECT_NAME} ixwebsocket cppzmq-static std23::nontype_functional)
+target_link_libraries(${PROJECT_NAME} hv_static glaze::glaze msft_proxy4::proxy)
 
-target_include_directories(${PROJECT_NAME} PRIVATE src)

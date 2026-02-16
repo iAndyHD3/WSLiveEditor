@@ -19,8 +19,12 @@
 #define CHECK_ACTION(Type) \
 if(auto runner = glz::read_json<Type>(msg); runner.has_value()) \
 { \
-    if(Type::EDITOR_ACTION && !g_inEditor) {\
-       channel->send("{\"status\":\"error\",\"error\":\"Enter the level editor to run this action\"}");\
+    log::error("{}",Type::EDITOR_ACTION && !(g_inEditor.load()));\
+    if(Type::EDITOR_ACTION && !(g_inEditor.load())) {\
+       channel->send(std::string("{\"status\":\"error\",\"error\":\"Enter the level editor to run this action\"}"));\
+       if((*runner).close) {\
+            channel->close();\
+       }\
        return;\
     }\
     std::lock_guard lock(g_actionsMutex);\

@@ -48,7 +48,7 @@ CPMAddPackage("gh:stephenberry/glaze@6.0.3")
 
 CPMAddPackage(
   GITHUB_REPOSITORY ithewei/libhv
-  GIT_TAG b2dac28
+  GIT_TAG 284e9e3
   OPTIONS "BUILD_EXAMPLES OFF;BUILD_SHARED OFF"
 )
 

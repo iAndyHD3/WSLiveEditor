@@ -1,0 +1,8 @@
+{
+    "action": "GET_LEVEL_STRING"
+}
+
+{
+    "action": "ADD_OBJECTS",
+    "objects": "1,1,2,100,3,100"
+}

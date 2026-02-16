@@ -47,11 +47,11 @@ CPMAddPackage(
 CPMAddPackage("gh:stephenberry/glaze@6.0.3")
 
 CPMAddPackage(
-  GITHUB_REPOSITORY ithewei/libhv
-  GIT_TAG 284e9e3
+  GITHUB_REPOSITORY zaphoyd/websocketpp
+  GIT_TAG 4dfe1be
   OPTIONS "BUILD_EXAMPLES OFF;BUILD_SHARED OFF"
 )
 
 
-target_link_libraries(${PROJECT_NAME} hv_static glaze::glaze msft_proxy4::proxy)
+target_link_libraries(${PROJECT_NAME} websocketpp glaze::glaze msft_proxy4::proxy)
 

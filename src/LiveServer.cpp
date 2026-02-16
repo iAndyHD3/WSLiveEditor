@@ -1,4 +1,5 @@
-#include "hv/WebSocketChannel.h"
+#include <websocketpp/config/asio_no_tls.hpp>
+#include <websocketpp/server.hpp>
 
 #include <Geode/Geode.hpp>
 #include <Geode/binding/EditorPauseLayer.hpp>
@@ -11,78 +12,72 @@
 #include <matjson.hpp>
 #include <string_view>
 
-#include <Geode/modify/LevelEditorLayer.hpp>
-#include <Geode/binding/MenuLayer.hpp>
 #include <Geode/binding/GameManager.hpp>
+#include <Geode/binding/MenuLayer.hpp>
+#include <Geode/modify/LevelEditorLayer.hpp>
 
 #include <fmt/format.h>
 #include <proxy/proxy.h>
 #include "ActionUtils.hpp"
-#include "hv/wsdef.h"
 
 #include <glaze/glaze.hpp>
 #include <glaze/thread/shared_async_vector.hpp>
-#include <hv/WebSocketServer.h>
 
 #include <arc/prelude.hpp>
 
-hv::WebSocketServer server;
-hv::WebSocketService ws;
+#include <mutex>
+#include <thread>
+
+using websocketpp::connection_hdl;
+using websocketpp::lib::bind;
+using websocketpp::lib::lock_guard;
+using websocketpp::lib::placeholders::_1;
+using websocketpp::lib::placeholders::_2;
+
+using WSServer = websocketpp::server<websocketpp::config::asio>;
+
+WSServer* g_wsServer = nullptr;
+std::thread g_wsThread;
+
 
 using namespace geode::prelude;
 
 struct Response {
-    std::string_view status; //this is only ever set to compile-time strings
+    std::string_view status;
     std::string error;
     std::optional<glz::generic> response;
-    static Response make_success() {
-        return {.status = "successful"};
-
-    }
-    struct glaze
-    {
-        using T = Response;
-        static constexpr auto value{glz::escaped<&T::response>};
-    };
-
+    static Response make_success() { return {.status = "successful"}; }
+    
     static Response make_success(glz::generic&& payload) noexcept {
         log::info("constructing success with size: {}", payload.size());
         Response res;
         res.status = "successful";
-        res.response.emplace(std::move(payload));  // move into the optional
+        res.response.emplace(std::move(payload));
         return res;
     }
 
-    static Response make_error(std::string&& error_msg) {
-        return {.status = "error", .error = std::move(error_msg)};
-    }
+    static Response make_error(std::string&& error_msg) { return {.status = "error", .error = std::move(error_msg)}; }
 };
 
 PRO_DEF_MEM_DISPATCH(MemRun, run);
 
-struct Runnable : pro::facade_builder
-    ::add_convention<MemRun, Response(LevelEditorLayer*)>
-    ::build {};
+struct Runnable : pro::facade_builder ::add_convention<MemRun, Response(LevelEditorLayer*)>::build {};
 
 
-
-struct Action
-{
-    WebSocketChannelPtr client;
+struct Action {
+    connection_hdl hdl;
     pro::proxy<Runnable> runner;
     bool shouldClose = false;
 };
 
 
-struct Add
-{
+struct Add {
     static constexpr auto ACTION_NAME = "ADD_OBJECTS";
     static constexpr auto EDITOR_ACTION = true;
     std::string action;
     std::string objects;
     bool close;
-    Response run(LevelEditorLayer* editor)
-    {
+    Response run(LevelEditorLayer* editor) {
         EditorUI::get()->m_alertShown = true;
         editor->createObjectsFromString(objects, false, false);
         return Response::make_success();
@@ -100,10 +95,8 @@ static gd::vector<short> getGroupIDs(GameObject* obj) {
     return res;
 }
 
-static bool hasGroup(GameObject* obj, int group)
-{
-    for (const auto& g : getGroupIDs(obj))
-    {
+static bool hasGroup(GameObject* obj, int group) {
+    for (const auto& g : getGroupIDs(obj)) {
         if (g == group)
             return true;
     }
@@ -111,27 +104,22 @@ static bool hasGroup(GameObject* obj, int group)
 }
 
 
-
-//remove
-struct Remove
-{
+struct Remove {
     static constexpr auto ACTION_NAME = "REMOVE_OBJECTS";
     static constexpr auto EDITOR_ACTION = true;
     std::string action;
     int group;
     bool close;
-    Response run(LevelEditorLayer* editor)
-    {
+    Response run(LevelEditorLayer* editor) {
         geode::cocos::CCArrayExt<GameObject*> toDelete;
-        for(GameObject* obj : geode::cocos::CCArrayExt<GameObject*>(editor->m_objects))
-        {
-            if (hasGroup(obj, group))
-            {
+        for (GameObject* obj : geode::cocos::CCArrayExt<GameObject*>(editor->m_objects)) {
+            if (hasGroup(obj, group)) {
                 toDelete.push_back(obj);
             }
         }
 
-        if(toDelete.size() == 0) return Response::make_success();
+        if (toDelete.size() == 0)
+            return Response::make_success();
 
 
         auto selected = editor->m_editorUI->getSelectedObjects();
@@ -148,15 +136,12 @@ struct Remove
 
 GLZ_ACTION_META(Remove)
 
-//GetLevelString
-struct GetLevelString
-{
+struct GetLevelString {
     static constexpr auto ACTION_NAME = "GET_LEVEL_STRING";
     static constexpr auto EDITOR_ACTION = true;
     std::string action;
     bool close;
-    Response run(LevelEditorLayer* editor)
-    {
+    Response run(LevelEditorLayer* editor) {
         glz::generic s = std::string(editor->getLevelString());
         return Response::make_success(std::move(s));
     }
@@ -164,13 +149,7 @@ struct GetLevelString
 
 GLZ_ACTION_META(GetLevelString)
 
-void func(std::source_location src = std::source_location::current()) {
-
-}
-
-//GetLevelString
-struct ReplaceLevelString
-{
+struct ReplaceLevelString {
     static constexpr auto ACTION_NAME = "REPLACE_LEVEL_STRING";
     static constexpr auto EDITOR_ACTION = true;
     std::string action;
@@ -181,33 +160,29 @@ struct ReplaceLevelString
     static GJGameLevel* globallevel;
     static std::string globalNewlevelString;
     void enterEditorAfterExiting(float) {
-        //DO NOT USE ANY MEMBERS FROM THE CLASS.
-        //it is being scheduled with target nullptr
-
-        if(!LevelEditorLayer::get()) {
+        if (!LevelEditorLayer::get()) {
             globallevel->m_levelString = std::move(globalNewlevelString);
             globalNewlevelString.clear();
 
             cocos2d::CCDirector::get()->replaceScene(LevelEditorLayer::scene(globallevel, false));
-            CCScheduler::get()->unscheduleSelector(schedule_selector(ReplaceLevelString::enterEditorAfterExiting), globallevel);
+            CCScheduler::get()->unscheduleSelector(
+                    schedule_selector(ReplaceLevelString::enterEditorAfterExiting), globallevel);
         }
     }
 
-
-    Response run(LevelEditorLayer* editor)
-    {
+    Response run(LevelEditorLayer* editor) {
         auto pause = EditorPauseLayer::create(editor);
         auto level = editor->m_level;
-        if(save) {
+        if (save) {
             pause->saveLevel();
         }
         globalNewlevelString = std::move(levelString);
         globallevel = level;
-        CCDirector::get()->getScheduler()->scheduleSelector(schedule_selector(ReplaceLevelString::enterEditorAfterExiting), level, 0.05, false);
+        CCDirector::get()->getScheduler()->scheduleSelector(
+                schedule_selector(ReplaceLevelString::enterEditorAfterExiting), level, 0.05, false);
 
         pause->onExitEditor(nullptr);
         log::info("exited");
-
 
 
         log::info("returning");
@@ -228,79 +203,78 @@ std::mutex g_actionsMutex;
 std::atomic<bool> g_inEditor;
 
 
+void on_open(websocketpp::connection_hdl hdl) { log::info("open"); }
 
+void on_message(websocketpp::connection_hdl hdl, WSServer::message_ptr msg) {
+    geode::log::debug("recieved: {}", msg->get_payload());
+    log::debug("inEditor: {}", g_inEditor.load());
 
-$on_mod(Loaded)
-{
-    ws.onopen = [](const WebSocketChannelPtr& channel, const HttpRequestPtr& req)
-    {
-        log::info("open");
-    };
-    ws.onmessage = [](const WebSocketChannelPtr& channel, const std::string& msg)
-    {
-        geode::log::debug("recieved: {}", msg);
-        log::debug("inEditor: {}", g_inEditor.load());
+    std::string msgStr = msg->get_payload();
 
-        CHECK_ACTION(Add)
-        CHECK_ACTION(Remove)
-        CHECK_ACTION(GetLevelString)
-        CHECK_ACTION(ReplaceLevelString)
-    };
-
-    ws.onclose = [](const WebSocketChannelPtr& channel) {
-        geode::log::debug("onclose");
-    };
-
-    server = hv::WebSocketServer(&ws);
-    server.setPort(geode::Mod::get()->getSettingValue<int>("ws-port"));
-    server.setThreadNum(1);
-    server.start();
+    CHECK_ACTION(Add, hdl)
+    CHECK_ACTION(Remove, hdl)
+    CHECK_ACTION(GetLevelString, hdl)
+    CHECK_ACTION(ReplaceLevelString, hdl)
 }
 
-struct LSHooks : geode::Modify<LSHooks, LevelEditorLayer>
-{
+void on_close(websocketpp::connection_hdl hdl) { geode::log::debug("onclose"); }
+
+
+$on_mod(Loaded) {
+    g_wsServer = new WSServer();
+
+    g_wsServer->set_access_channels(websocketpp::log::alevel::all);
+    g_wsServer->clear_access_channels(websocketpp::log::alevel::frame_payload);
+
+    g_wsServer->init_asio();
+
+    g_wsServer->set_open_handler(bind(&on_open, _1));
+    g_wsServer->set_message_handler(bind(&on_message, _1, _2));
+    g_wsServer->set_close_handler(bind(&on_close, _1));
+
+    g_wsServer->set_listen_backlog(1024);
+
+    int port = geode::Mod::get()->getSettingValue<int>("ws-port");
+    g_wsServer->listen(port);
+
+    g_wsServer->start_accept();
+
+    g_wsThread = std::thread([&]() { g_wsServer->run(); });
+}
+
+struct LSHooks : geode::Modify<LSHooks, LevelEditorLayer> {
     struct Fields {
-        ~Fields() {
-            g_inEditor = false;
-        }
+        ~Fields() { g_inEditor = false; }
     };
 
-    void performQueuedActions(float dt)
-    {
+    void performQueuedActions(float dt) {
         std::lock_guard lock(g_actionsMutex);
-        if(g_actions.empty()) return;
+        if (g_actions.empty())
+            return;
 
-        for(auto&[client, runner, shouldClose] : g_actions)
-        {
-            //geode::log::info("hi");
-            //if(client->isClosed()) return;
-
-            if(auto resp = glz::write_json(runner->run(this)))
-            {
+        for (auto& [hdl, runner, shouldClose] : g_actions) {
+            if (auto resp = glz::write_json(runner->run(this))) {
                 log::info("sending");
-                client->send(*resp);
-            }
-            else
-            {
-                client->send("{\"status\":\"error\",\"error\":\"Could not produce response object\"}");
+                g_wsServer->get_con_from_hdl(hdl)->send(std::string(*resp), websocketpp::frame::opcode::text);
+            } else {
+                g_wsServer->get_con_from_hdl(hdl)->send(
+                        std::string("{\"status\":\"error\",\"error\":\"Could not produce response object\"}"),
+                        websocketpp::frame::opcode::text);
             }
             log::info("done closing");
-            if(shouldClose)
-            {
+            if (shouldClose) {
                 log::info("closing");
-                client->close();
+                g_wsServer->get_con_from_hdl(hdl)->close(1000, "");
             }
         }
         g_actions.clear();
     }
 
-    bool init(GJGameLevel* level, bool idk)
-    {
-        if(!LevelEditorLayer::init(level, idk)) return false;
+    bool init(GJGameLevel* level, bool idk) {
+        if (!LevelEditorLayer::init(level, idk))
+            return false;
         g_inEditor = true;
         this->schedule(schedule_selector(LSHooks::performQueuedActions), 0.1f);
         return true;
     }
-
-
 };

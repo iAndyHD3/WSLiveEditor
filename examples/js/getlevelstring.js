@@ -16,11 +16,10 @@ socket.on("open", () => {
 
 socket.on("message", (data) => {
     console.log(`Received chunk of size: ${data.length || data.byteLength}`);
-    
+    data = data.toString();
+    console.log(data);
     try {
-        // If it's a Buffer (Node.js default), convert to string
-        const stringData = data.toString();
-        const resp = JSON.parse(stringData);
+        const resp = JSON.parse(data);
         
         if (resp.status === "successful") {
             console.log("Data received successfully!");

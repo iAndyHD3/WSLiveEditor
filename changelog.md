@@ -1,5 +1,10 @@
 # WSLiveEditor Changelog
 
+## v3.0.0
+- Update to geode v5
+- Chagne websocket library to websocketpp (better stability)
+- Add REPLACE_LEVEL_STRING
+
 ## v2.0.0
 - Rewrite the entire thing
 - Add GET_LEVEL_STRING action

@@ -206,7 +206,6 @@ std::atomic<bool> g_inEditor;
 void on_open(websocketpp::connection_hdl hdl) { log::info("open"); }
 
 void on_message(websocketpp::connection_hdl hdl, WSServer::message_ptr msg) {
-    geode::log::debug("recieved: {}", msg->get_payload());
     log::debug("inEditor: {}", g_inEditor.load());
 
     std::string msgStr = msg->get_payload();
@@ -223,8 +222,8 @@ void on_close(websocketpp::connection_hdl hdl) { geode::log::debug("onclose"); }
 $on_mod(Loaded) {
     g_wsServer = new WSServer();
 
-    g_wsServer->set_access_channels(websocketpp::log::alevel::all);
-    g_wsServer->clear_access_channels(websocketpp::log::alevel::frame_payload);
+    g_wsServer->set_access_channels(websocketpp::log::alevel::none);
+    g_wsServer->set_error_channels(websocketpp::log::elevel::none);
 
     g_wsServer->init_asio();
 
@@ -254,16 +253,16 @@ struct LSHooks : geode::Modify<LSHooks, LevelEditorLayer> {
 
         for (auto& [hdl, runner, shouldClose] : g_actions) {
             if (auto resp = glz::write_json(runner->run(this))) {
-                log::info("sending");
-                g_wsServer->get_con_from_hdl(hdl)->send(std::string(*resp), websocketpp::frame::opcode::text);
+                log::info("Sending Response to client");
+                g_wsServer->get_con_from_hdl(hdl)->send(*resp, websocketpp::frame::opcode::text);
             } else {
+                log::error("Sending error to client");
                 g_wsServer->get_con_from_hdl(hdl)->send(
                         std::string("{\"status\":\"error\",\"error\":\"Could not produce response object\"}"),
                         websocketpp::frame::opcode::text);
             }
-            log::info("done closing");
             if (shouldClose) {
-                log::info("closing");
+                log::info("Closing client");
                 g_wsServer->get_con_from_hdl(hdl)->close(1000, "");
             }
         }

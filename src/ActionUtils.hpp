@@ -14,7 +14,6 @@
 
 #define CHECK_ACTION(Type, hdl)                                                                                        \
     if (auto runner = glz::read_json<Type>(msgStr); runner.has_value()) {                                              \
-        log::error("{}", Type::EDITOR_ACTION && !(g_inEditor.load()));                                                 \
         if (Type::EDITOR_ACTION && !(g_inEditor.load())) {                                                             \
             g_wsServer->get_con_from_hdl(hdl)->send(                                                                   \
                     std::string("{\"status\":\"error\",\"error\":\"Enter the level editor to run this action\"}"),     \

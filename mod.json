@@ -1,12 +1,12 @@
 {
-  "geode": "5.0.0-beta.2",
+  "geode": "5.0.0-beta.3",
   "gd": {
     "win": "2.2081",
     "android": "2.2081",
     "mac": "2.2081",
     "ios": "2.2081"
   },
-  "version": "v2.7.0",
+  "version": "v3.0.0",
   "id": "iandyhd3.wsliveeditor",
   "name": "WSLiveEditor",
   "developer": "iAndyHD3",
@@ -17,18 +17,13 @@
   },
   "issues": {
     "url": "https://github.com/iAndyHD3/WSLiveEditor/issues",
-    "info": "If you encounter issues (like crashes) please report it to the GitHub issues page."
+    "info": "If you encounter issues (like crashes) please report them on GitHub."
   },
   "settings": {
     "ws-port": {
       "type": "int",
       "default": 1313,
       "name": "WebSocket Server Port"
-    },
-    "tcp-port": {
-      "type": "int",
-      "default": 1414,
-      "name": "TCP Socket Port"
     }
   },
   "tags": ["utility", "developer", "editor"]

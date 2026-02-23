@@ -19,6 +19,7 @@
                     std::string("{\"status\":\"error\",\"error\":\"Enter the level editor to run this action\"}"),     \
                     websocketpp::frame::opcode::text);                                                                 \
             if ((*runner).close) {                                                                                     \
+                geode::log::info("CLOSING");                                                                           \
                 g_wsServer->get_con_from_hdl(hdl)->close(1000, "");                                                    \
             }                                                                                                          \
             return;                                                                                                    \

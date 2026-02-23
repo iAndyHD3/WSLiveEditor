@@ -47,7 +47,7 @@ struct Response {
     std::string error;
     std::optional<glz::generic> response;
     static Response make_success() { return {.status = "successful"}; }
-    
+
     static Response make_success(glz::generic&& payload) noexcept {
         log::info("constructing success with size: {}", payload.size());
         Response res;
@@ -206,7 +206,6 @@ std::atomic<bool> g_inEditor;
 void on_open(websocketpp::connection_hdl hdl) { log::info("open"); }
 
 void on_message(websocketpp::connection_hdl hdl, WSServer::message_ptr msg) {
-    log::debug("inEditor: {}", g_inEditor.load());
 
     std::string msgStr = msg->get_payload();
 
@@ -214,6 +213,8 @@ void on_message(websocketpp::connection_hdl hdl, WSServer::message_ptr msg) {
     CHECK_ACTION(Remove, hdl)
     CHECK_ACTION(GetLevelString, hdl)
     CHECK_ACTION(ReplaceLevelString, hdl)
+
+    log::info("exiting message handler!");
 }
 
 void on_close(websocketpp::connection_hdl hdl) { geode::log::debug("onclose"); }
@@ -251,21 +252,27 @@ struct LSHooks : geode::Modify<LSHooks, LevelEditorLayer> {
         if (g_actions.empty())
             return;
 
+        log::info("entering loop!");
         for (auto& [hdl, runner, shouldClose] : g_actions) {
             if (auto resp = glz::write_json(runner->run(this))) {
                 log::info("Sending Response to client");
-                g_wsServer->get_con_from_hdl(hdl)->send(*resp, websocketpp::frame::opcode::text);
+                if (hdl.expired()) {
+                    log::error("EXPIRED!");
+                    break;
+                }
+                g_wsServer->send(hdl, *resp, websocketpp::frame::opcode::text);
             } else {
                 log::error("Sending error to client");
-                g_wsServer->get_con_from_hdl(hdl)->send(
-                        std::string("{\"status\":\"error\",\"error\":\"Could not produce response object\"}"),
+                g_wsServer->send(
+                        hdl, std::string("{\"status\":\"error\",\"error\":\"Could not produce response object\"}"),
                         websocketpp::frame::opcode::text);
             }
             if (shouldClose) {
                 log::info("Closing client");
-                g_wsServer->get_con_from_hdl(hdl)->close(1000, "");
+                g_wsServer->close(hdl, 1000, "");
             }
         }
+        log::info("exiting loop! clearing!");
         g_actions.clear();
     }
 

@@ -14,35 +14,29 @@ jobs:
         config:
           - name: Windows
             os: windows-latest
+            build-type: RelWithDebInfo
           - name: macOS
             os: macos-latest
-
           - name: Android32
             os: ubuntu-latest
             target: Android32
-
           - name: Android64
             os: ubuntu-latest
             target: Android64
-
           - name: iOS
             os: macos-latest
             target: iOS
-
     name: ${{ matrix.config.name }}
     runs-on: ${{ matrix.config.os }}
-
     steps:
       - uses: actions/checkout@v4
 
       - name: Build the mod
         uses: geode-sdk/build-geode-mod@main
         with:
-          bindings: iAndyHD3/bindings
-          bindings-ref: main
+          sdk: nightly
           combine: true
           target: ${{ matrix.config.target }}
-          sdk: stable
 
   package:
     name: Package builds
@@ -57,3 +51,35 @@ jobs:
         with:
           name: Build Output
           path: ${{ steps.build.outputs.build-output }}
+
+      # Discord upload (file + embed) — only on main branch when NIGHTLY_WEBHOOK secret exists
+      - name: Check if has nightly webhook
+        id: check
+        if: github.ref == 'refs/heads/geode'
+        run: echo "has-nightly-webhook=${{ secrets.NIGHTLY_WEBHOOK != '' }}" >> $GITHUB_OUTPUT
+
+      - uses: actions/checkout@v4
+        if: ${{ steps.check.outputs.has-nightly-webhook == 'true' }}
+
+      - name: Get commit messages
+        id: commit
+        if: ${{ steps.check.outputs.has-nightly-webhook == 'true' }}
+        run: |
+          echo "commit-message=$(git log -1 --pretty=format:"%s" | head -n 1)" >> $GITHUB_OUTPUT
+          echo "build-color=#$(git log -1 --pretty=format:"%h" | cut -c 1-6)" >> $GITHUB_OUTPUT
+
+      - name: Upload release to Discord
+        uses: prevter/discord-webhook@main
+        if: ${{ steps.check.outputs.has-nightly-webhook == 'true' }}
+        with:
+          webhook-url: ${{ secrets.NIGHTLY_WEBHOOK }}
+          content: "New nightly build available!"
+          files: ${{ steps.build.outputs.build-output }}/*.geode
+          embed-title: ${{ steps.commit.outputs.commit-message }}
+          embed-description: "[Download](https://nightly.link/${{ github.event.repository.full_name }}/actions/runs/${{ github.run_id }})"
+          embed-color: ${{ steps.commit.outputs.build-color }}
+          embed-url: ${{ github.event.repository.html_url }}/actions/runs/${{ github.run_id }}
+          embed-author: ${{ github.actor }}
+          embed-author-icon: "https://avatars.githubusercontent.com/u/${{ github.actor_id }}?v=4"
+          embed-timestamp: "now"
+          debug-print: true

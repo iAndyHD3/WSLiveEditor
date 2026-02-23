@@ -54,3 +54,4 @@
 .cache/
 node_modules
 examples/js/package-lock.json
+*.txt

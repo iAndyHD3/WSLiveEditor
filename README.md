@@ -11,7 +11,7 @@ Up on entering the editor, a websocket server will be opened on `127.0.0.1:1313`
 Check out the [wiki](../../wiki).
 
 ## FAQ
-Befor opening an issue, look at the [FAQ](../../wiki/FAQ)
+Before opening an issue, look at the [FAQ](../../wiki/FAQ)
 
 ## Bugs/Features/Questions/Discussion
 Open an issue or join the [discord server](https://discord.gg/xb6JWZnk9J)

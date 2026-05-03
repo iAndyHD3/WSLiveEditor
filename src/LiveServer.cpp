@@ -79,7 +79,7 @@ struct Add {
     bool close;
     Response run(LevelEditorLayer* editor) {
         EditorUI::get()->m_alertShown = true;
-        editor->createObjectsFromString(objects, false, false);
+        editor->createObjectsFromString(objects, false, true);
         return Response::make_success();
     }
 };
